@@ -1,3 +1,10 @@
-*.csv
+downloads/IRS/*.csv
+downloads/IRS/*.dat
+downloads/IRS/*.zip
+downloads/IRS/data-download-epostcard.txt
+downloads/NCCS/*.csv
+final output/*.*
+validation/failures/*.csv
+validation/fixes/*.csv
 *.pyc
-log.txt
+log_*.txt
