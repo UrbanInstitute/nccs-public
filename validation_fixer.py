@@ -130,8 +130,7 @@ class Utilities():
         self.df.loc[token['current_ein']] = token['modified_row'] #write result back to original
 
     def get_components(self):
-        """
-        Loads the methods for validation calculations from Core, then builds the cross references
+        """Loads the methods for validation calculations from Core, then builds the cross references
         needed to track relations between equations (e.g. one equation that fails has TOTREV2 in it,
         so the program finds all equations with TOTREV2 and displays those also)
         """
@@ -292,8 +291,7 @@ class Utilities():
         webbrowser.open_new_tab(url)
 
     def get_form_crosswalk(self):
-        """
-        For connecting column names to 990 form locations
+        """For connecting column names to 990 form locations
         """
         return {'FULL': pd.Series(['Part VIII Line 1h', 'Part VIII Line 2g (A)', 'Part VIII Line 3A', 'Part VIII Line 4A', 'Part VIII Line 5A', 'Part VIII Line 6a (i)',
                                    'Part VIII Line 6a (ii)', 'Sum of Part VIII Line 6a (i) and (ii)', 'Part VIII Line 6b (i)', 'Part VIII Line 6b (ii)',
@@ -315,8 +313,7 @@ class Utilities():
                 'PF':   None}
 
     def process_token_storage(self, token):
-        """
-        Method for when the user has gone back to the previous token and then finished it and needs to restore the delayed one.
+        """Method for when the user has gone back to the previous token and then finished it and needs to restore the delayed one.
         """
         self.update_df_row(token)         #update the df with the prior token
         token = self.token_storage['on_hold']   #extract the token that was placed on hold
@@ -922,8 +919,7 @@ class CoreFixer(Utilities, Display, UserInput):
         self.components, self.cross_components, self.multiples, self.equations, self.validate_method_dict = self.get_components()
 
     def start(self):
-        """
-        Main process called on the class instance to begin the validator
+        """Main process called on the class instance to begin the validator
         """
         self.get_user()
         self.load_data()
@@ -932,8 +928,7 @@ class CoreFixer(Utilities, Display, UserInput):
         self.end()
 
     def dataframe_loop(self):
-        """
-        Iterates through each row in the dataframe
+        """Iterates through each row in the dataframe
         """
         for ein, row in self.df.iterrows():
             #only process a row that isn't marked "ignore" and that has a failure or is not marked fixed/checked
@@ -948,8 +943,7 @@ class CoreFixer(Utilities, Display, UserInput):
                 self.prior_five = [token['current_ein']] + self.prior_five[:4]
 
     def row_loop(self, token):
-        """
-        Continues to loop the same row through the display until it receives an exit condition
+        """Continues to loop the same row through the display until it receives an exit condition
         """
         while not token['exit']:
             self.display(token)

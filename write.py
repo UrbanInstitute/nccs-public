@@ -9,8 +9,7 @@ from process_co_pc import pc_dup_criteria, co_dup_criteria
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class Write(Deduplicate):
-    """
-    This class handles writing the final dataframes out for release.  It can tell which files to create
+    """This class handles writing the final dataframes out for release.  It can tell which files to create
     by which dataframes it currently knows, aside from the "_full990" files, which are set by flag at
     startup.
 
@@ -26,8 +25,7 @@ class Write(Deduplicate):
         clear_files(main.path, self.output_folder)
 
     def build_output(self):
-        """
-        This method goes through the dataframes that come out of the data and process classes, split along
+        """This method goes through the dataframes that come out of the data and process classes, split along
         the initial axis of Full, EZ or PF, then splits and recombines them into the CO, PC and PF files.
 
         ARGUMENTS
@@ -86,8 +84,7 @@ class Write(Deduplicate):
         main.logger.info('Finished building final output.\n')
 
     def handle_duplicates(self):
-        """
-        The raw data, the data from backfilling, and the data from merging and splitting into CO/PC, may all
+        """The raw data, the data from backfilling, and the data from merging and splitting into CO/PC, may all
         result in non-unique EINs in the index.  The method loads the criteria to select the "best" instance
         of a given EIN from the process_co_pc and process_pf classes, then applies them to all the dataframes
         in memory.
@@ -116,8 +113,7 @@ class Write(Deduplicate):
         main.logger.info('All duplicate EINs removed.\n')
 
     def to_file(self):
-        """
-        Writes the final releases to file, in the "final output" folder.
+        """Writes the final releases to file, in the "final output" folder.
 
         ARGUMENTS
         None

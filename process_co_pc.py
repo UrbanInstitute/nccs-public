@@ -13,12 +13,10 @@ def co_dup_criteria(dups):
     return dups, ['FISYR', 'val', 'STYEAR', 'rnd']
 
 class ProcessCOPC():
-    """
-    Contains the methods to create columns that appear only in the CO and PC files, and not in the PF.
+    """Contains the methods to create columns that appear only in the CO and PC files, and not in the PF.
     """
     def copc_epostcard(self, df):
-        """
-        Generates a piecewise value based on FISYR and EPOSTCARD.  This replaces the existing EPOSTCARD
+        """Generates a piecewise value based on FISYR and EPOSTCARD.  This replaces the existing EPOSTCARD
         value, which is a datetime object, with a 1 or a 0.
 
         ARGUMENTS
@@ -39,8 +37,7 @@ class ProcessCOPC():
         return df.apply(lambda r: epostcard(r), axis=1)
 
     def copc_styear(self, df):
-        """
-        Slices the month off the end of TAXPER.  Returns the month-1 if month is not 12.  This is a holdover
+        """Slices the month off the end of TAXPER.  Returns the month-1 if month is not 12.  This is a holdover
         from the original SQL code.  Also catches month=1, so that it never returns a month of 0.
 
         ARGUMENTS
@@ -59,8 +56,7 @@ class ProcessCOPC():
         return df.apply(lambda r: styear(r), axis=1)
 
     def copc_soiyr(self, df):
-        """
-        Slices the month off the end of TAXPER.  Returns the month-1 if month is not 12.  This is a holdover
+        """Slices the month off the end of TAXPER.  Returns the month-1 if month is not 12.  This is a holdover
         from the original SQL code.  Also catches month=1, so that it never returns a month of 0.  Identical
         to STYEAR.
 
@@ -80,8 +76,7 @@ class ProcessCOPC():
         return df.apply(lambda r: soiyr(r), axis=1)
 
     def copc_subcd(self, df):
-        """
-        Simply returns the value from SUBSECCD.  Holdover from the original SQL code.
+        """Simply returns the value from SUBSECCD.  Holdover from the original SQL code.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe

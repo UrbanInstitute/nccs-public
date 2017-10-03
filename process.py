@@ -12,15 +12,13 @@ dask.set_options(get=dask.multiprocessing.get) #switch from default multithreadi
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class Deduplicate():
-    """
-    Class that holds the deduplicate method, which knows how to select the "best" of any given EIN that
+    """Class that holds the deduplicate method, which knows how to select the "best" of any given EIN that
     shows up more than once in the index.  This was originally split into its own class so it could be
     inherited in multiple places, but that is now redundant; it is only inherited and called by the Write
     class.
     """
     def deduplicate(self, source, form, dup_criteria):
-        """
-        Method for efficiently removing duplicate EINs based on criteria specified in functions found in
+        """Method for efficiently removing duplicate EINs based on criteria specified in functions found in
         process_co_pc and process_pf.
 
         Originally the process was handled by building a column of tuples to sort by, but because of the
@@ -100,8 +98,7 @@ class Deduplicate():
         return df
 
 class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
-    """
-    Base class for the calculation of all new columns in the core files.  It holds the methods to create
+    """Base class for the calculation of all new columns in the core files.  It holds the methods to create
     any columns that appear in all three 990 forms (calculated at the initial Full-EZ-PF level, not the
     final CO-PC-PF level), while it inherits the methods used by only one or two of the forms from the
     ProcessPF, ProcessEZ and ProcessFull classes.
@@ -112,8 +109,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         self.chunksize = 100000
 
     def manual_fixes(self):
-        """
-        Base method for applying any manual, one-time fixes to the data.  This is usually defined as a change
+        """Base method for applying any manual, one-time fixes to the data.  This is usually defined as a change
         to a single EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.
 
         ARGUMENTS
@@ -132,8 +128,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             self.full_manual()
 
     def calculate_columns(self):
-        """
-        Base method for creating all new, calculated columns in the core files.  The option to parallelize
+        """Base method for creating all new, calculated columns in the core files.  The option to parallelize
         the calculations using Dask was added here, but was not found to speed the apply process up, so
         its use is not recommended.
 
@@ -212,8 +207,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
     #     main.logger.info('All duplicate EINs removed.\n')
 
     def parallel_apply(self, df, func):
-        """
-        Experimental.
+        """Experimental.
 
         ARGUMENTS
         df (dask.core.DataFrame) : A Dask dataframe
@@ -246,8 +240,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         # return pd.concat(recombine)
 
     def all_randnum(self, df):
-        """
-        Generates a NumPy array of random numbers, the same length as the core file dataframe.
+        """Generates a NumPy array of random numbers, the same length as the core file dataframe.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -258,8 +251,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return random.random(len(df))
 
     def all_nccskey(self, df):
-        """
-        Generates two new string columns, one in the form EIN+TAXPER, the other EIN+FISYR.
+        """Generates two new string columns, one in the form EIN+TAXPER, the other EIN+FISYR.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -282,8 +274,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return new_col1, new_col2
 
     def all_fisyr(self, df):
-        """
-        Generates a Series as just the year portion of the TAXPER column.
+        """Generates a Series as just the year portion of the TAXPER column.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -294,8 +285,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['TAXPER'].str.slice(0,4).astype(int)
 
     def all_accper(self, df):
-        """
-        Generates a Series as just the non-year portion (accounting period) of the TAXPER column.
+        """Generates a Series as just the non-year portion (accounting period) of the TAXPER column.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -306,8 +296,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['TAXPER'].str.slice(4,6)
 
     def all_nteecc(self, df):
-        """
-        Generates a Series as a suibset of the NTEEFINAL columns.
+        """Generates a Series as a suibset of the NTEEFINAL columns.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -318,8 +307,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['NTEEFINAL'].str.slice(0, 4)
 
     def all_ntee1(self, df):
-        """
-        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEEFINAL1 and LEVEL4
+        """Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEEFINAL1 and LEVEL4
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -330,8 +318,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['NTEEFINAL'].str.slice(0, 1)
 
     def all_nteefinal1(self, df):
-        """
-        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and LEVEL4.
+        """Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and LEVEL4.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -342,8 +329,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['NTEEFINAL'].str.slice(0, 1)
 
     def all_level4(self, df):
-        """
-        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and NTEEFINAL1.
+        """Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and NTEEFINAL1.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -354,8 +340,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
         return df['NTEEFINAL'].str.slice(0, 1)
 
     def all_level1(self, df):
-        """
-        Generates a piecewise value based on SUBSECCD and FNDNCD.
+        """Generates a piecewise value based on SUBSECCD and FNDNCD.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -388,8 +373,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: level1(r), axis=1)
 
     def all_ntmaj10(self, df):
-        """
-        Generates a piecewise value based on NTEEFINAL.
+        """Generates a piecewise value based on NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -429,8 +413,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: ntmaj10(r), axis=1)
 
     def all_majgrpb(self, df):
-        """
-        Generates a piecewise value based on NTEEFINAL.
+        """Generates a piecewise value based on NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -456,8 +439,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: majgrpb(r), axis=1)
 
     def all_level3(self, df):
-        """
-        Generates a piecewise value based on NTEEFINAL.
+        """Generates a piecewise value based on NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -515,8 +497,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: level3(r), axis=1)
 
     def all_level2(self, df):
-        """
-        Generates a piecewise value based on SUBSECCD, FNDNCD, LEVEL3 and NTEEFINAL.
+        """Generates a piecewise value based on SUBSECCD, FNDNCD, LEVEL3 and NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -547,8 +528,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: level2(r), axis=1)
 
     def all_ntmaj12(self, df):
-        """
-        Generates a piecewise value based on NTEEFINAL.
+        """Generates a piecewise value based on NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe
@@ -572,8 +552,7 @@ class Process(ProcessPF, ProcessEZ, ProcessFull, Deduplicate):
             return df.apply(lambda r: ntmaj12(r), axis=1)
 
     def all_ntmaj5(self, df):
-        """
-        Generates a piecewise value based on NATMAJ10, which is in turn calculated from NTEEFINAL.
+        """Generates a piecewise value based on NATMAJ10, which is in turn calculated from NTEEFINAL.
 
         ARGUMENTS
         df (DataFrame) : Core file dataframe

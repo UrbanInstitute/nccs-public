@@ -9,12 +9,10 @@ def full_dup_criteria(dups):
     return dups, ['FISYR', 'val', 'STYEAR', 'rnd']
 
 class ProcessFull(ProcessCOPC):
-    """
-    Creates columns found only in the Full dataframe.
+    """Creates columns found only in the Full dataframe.
     """
     def full_calculate(self):
-        """
-        Base method for calling all of the methods to calculate the columns for the Full 990 form.
+        """Base method for calling all of the methods to calculate the columns for the Full 990 form.
 
         ARGUMENTS
         None
@@ -43,8 +41,7 @@ class ProcessFull(ProcessCOPC):
         full['SUBCD'] = self.copc_subcd(full)
 
     def full_grrec(self, full):
-        """
-        Calculates the GRREC column.  Note that the same column has a different calculation for EINs from
+        """Calculates the GRREC column.  Note that the same column has a different calculation for EINs from
         the Full 990 and EINS from the 990 EZ.
 
         ARGUMENTS
@@ -66,8 +63,7 @@ class ProcessFull(ProcessCOPC):
                full['SALEOTHE'] + full['LESSDIRFNDRSNG'] + full['LESSDIRGAMING'] + full['GOODS']
 
     def full_rentinc(self, full):
-        """
-        Calculates the RENTINC column.
+        """Calculates the RENTINC column.
 
         ARGUMENTS
         full (DataFrame) : Core file dataframe
@@ -81,8 +77,7 @@ class ProcessFull(ProcessCOPC):
         return full['GRSRNTSREAL'] + full['GRSRNTSPRSNL']
 
     def full_rentexp(self, full):
-        """
-        Calculates the RENTEXP column.
+        """Calculates the RENTEXP column.
 
         ARGUMENTS
         full (DataFrame) : Core file dataframe
@@ -96,15 +91,21 @@ class ProcessFull(ProcessCOPC):
         return full['RNTLEXPNSREAL'] + full['RNTLEXPNSPRSNL']
 
     def full_spevtg(self, full):
-        #SPEVTG = grsincfndrsng + grsincgaming
+        """Calculates the SPEVTG column.
+
+        ARGUMENTS
+        full (DataFrame) : Core file dataframe
+
+        RETURNS
+        Series
+        """
         assert(full['GRSINCFNDRSNG'].dtype.type in [np.int64, np.float64])
         assert(full['GRSINCGAMING'].dtype.type in [np.int64, np.float64])
 
         return full['GRSINCFNDRSNG'] + full['GRSINCGAMING']
 
     def full_direxp(self, full):
-        """
-        Calculates the DIREXP column.
+        """Calculates the DIREXP column.
 
         ARGUMENTS
         full (DataFrame) : Core file dataframe
@@ -118,8 +119,7 @@ class ProcessFull(ProcessCOPC):
         return full['LESSDIRFNDRSNG'] + full['LESSDIRGAMING']
 
     def full_fundinc(self, full):
-        """
-        Calculates the FUNDINC column.
+        """Calculates the FUNDINC column.
 
         ARGUMENTS
         full (DataFrame) : Core file dataframe
@@ -133,8 +133,7 @@ class ProcessFull(ProcessCOPC):
         return full['NETINCFNDRSNG'] + full['NETINCGAMING']
 
     def full_netinc(self, full):
-        """
-        Calculates the NETINC column.
+        """Calculates the NETINC column.
 
         ARGUMENTS
         full (DataFrame) : Core file dataframe
@@ -145,8 +144,7 @@ class ProcessFull(ProcessCOPC):
         return full['TOTREV2'] - full['EXPS']
 
     def full_totrev(self, full):
-        """
-        Calculates the TOTREC column.  Note that TOTREV2 is taken from 990 part VIII, 12A, while TOTREV
+        """Calculates the TOTREC column.  Note that TOTREV2 is taken from 990 part VIII, 12A, while TOTREV
         is calculated from the expense and income subtotals.  This is the only column like this, and usually
         any discrepencies between stated and calculated values are tested in the validation steps.  However,
         it was always done this way before, so it continues.
@@ -160,8 +158,7 @@ class ProcessFull(ProcessCOPC):
         return full['EXPS'] + full['NETINC']
 
     def full_filename(self, full):
-        """
-        Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to
+        """Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to
         the PDF of the 990 filing on the Foundation Center's website.  The full construction is:
 
         http://990s.foundationcenter.org/990_pdf_archive/<FIRST THREE DIGITS OF EIN>/<FULL EIN>/<FILENAME>.pdf
@@ -181,8 +178,7 @@ class ProcessFull(ProcessCOPC):
         return full.index + '_' + full['TAXPER'] + '_990O'
 
     def full_manual(self):
-        """
-        Applies any manual, one-time fixes to the Full data.  This is usually defined as a change to a single
+        """Applies any manual, one-time fixes to the Full data.  This is usually defined as a change to a single
         EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.
 
         ARGUMENTS

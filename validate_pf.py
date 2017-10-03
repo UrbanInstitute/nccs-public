@@ -1,8 +1,7 @@
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class ValidatePF():
-    """
-    Methods for validating EINs from IRS form 990 PF.
+    """Methods for validating EINs from IRS form 990 PF.
 
     Each method called by validate_pf represents the validation of one column, and comes with the kwarg
     fixer_display=False, which when set to True will return only a string representation of the equation.
@@ -12,8 +11,7 @@ class ValidatePF():
     strictly on sums given by the IRS form itself.
     """
     def validate_pf(self):
-        """
-        Base method for validating certain columns for EINs from IRS form 990 PF.
+        """Base method for validating certain columns for EINs from IRS form 990 PF.
 
         ARGUMENTS
         None

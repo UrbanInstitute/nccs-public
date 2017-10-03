@@ -1,16 +1,14 @@
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class ValidateFull():
-    """
-    Methods for validating EINs from IRS form 990 Full.
+    """Methods for validating EINs from IRS form 990 Full.
 
     Each method called by validate_full represents the validation of one column, and comes with the kwarg
     fixer_display=False, which when set to True will return only a string representation of the equation.
     This is for use in the validation fixer tool.
     """
     def validate_full(self):
-        """
-        Base method for validating certain columns for EINs from IRS form 990 Full.  Note that there's are
+        """Base method for validating certain columns for EINs from IRS form 990 Full.  Note that there's are
         some steps leadin to this that seem redundant/odd, but actually had to follow that order.
 
         The Full and EZ forms require different validations, because the components of each form are different.
