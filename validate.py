@@ -240,8 +240,7 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
         ARGUMENTS
         df (DataFrame) : The form being summarized
         form (str) : Name of the form
-        failed_validation (bool) : The flag from the validate method indicating whether there were any
-                                   failures for this form
+        failed_validation (bool) : The flag from the validate method indicating whether there were any failures for this form
 
         RETURNS
         None

@@ -202,15 +202,17 @@ class LoadData():
 
         ARGUMENTS
         cols (str or list): Default '*', used when only a subset of the data should be returned.
+
         index_col (str): Default 'EIN', specifies the column to use as the index.
+
         match_dtypes (DataFrame): Default None, if a dataframe is passed it will extract the schema from
-                                  it and apply it to the data specified in fname; otherwise it uses the
-                                  MySQL defaults.
+        it and apply it to the data specified in fname; otherwise it uses the MySQL defaults.
+
         force_sql_cols (bool): Default False, If True it will force the columns specified in the cols argument
-                               to become a part of the SQL statement; otherwise it downloads * in the SELECT
-                               statement and then subsets it later.  This is used, for example, in
-                               nteedocAllEINS because the full file is 1.5 gigabytes but only 1/3rd of that is
-                               needed.
+        to become a part of the SQL statement; otherwise it downloads * in the SELECT statement and then
+        subsets it later.  This is used, for example, in nteedocAllEINS because the full file is 1.5 gigabytes
+        but only 1/3rd of that is needed.
+
         RETURNS
         DataFrame
         """
@@ -291,10 +293,8 @@ class LoadData():
         """Method for downloading the epostcard (990N) data from the IRS.
 
         ARGUMENTS
-        usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as
-                         indexes.
-        names (list) : Default ['EIN', 'EPOSTCARD'], provides the header names.  Must be the same dimension
-                       as usecols.
+        usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as indexes.
+        names (list) : Default ['EIN', 'EPOSTCARD'], provides the header names.  Must be the same dimension as usecols.
         date_col (str) : Default 'EPOSTCARD', specifies the column to be converted to date dtype.
 
         RETURNS
@@ -339,8 +339,9 @@ class LoadData():
 
         ARGUMENTS
         url (str) : Any valid URL
+
         force (bool) : Default False, when True it will ignore existing files in the "downloads/IRS" folder,
-                       when False it will only download a new version if the file does not already exist.
+        when False it will only download a new version if the file does not already exist.
 
         RETURNS
         str : Location on local file system of the downloaded (or pre-existing) file.
