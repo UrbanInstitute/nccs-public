@@ -1,0 +1,5 @@
+The "failures" subfolder holds content the main program outputs for manual validation.  This is also where the validation fixer tool will look when loading that data for fixing.
+
+The "fixes" subfolder is where the validation fixer tool outputs its changes, and where the main program looks to incorporate those fixes into the main data.
+
+Neither folder should need manual editing by the user, unless the failure files are being split up amongst multiple users to do in pieces, in which case the spliting and recombining will need to be done manually.  The folders will be created automatically by the core program the first time it is run.

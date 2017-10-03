@@ -1,0 +1,7 @@
+#NCCS_RELEASE_YR = IRS_URL
+
+2014 = https://www.irs.gov/pub/irs-soi/15eofinextract990pf.dat
+2013 = https://www.irs.gov/pub/irs-soi/14eofinextract990pf.zip
+2012 = https://www.irs.gov/pub/irs-soi/13eofinextract990pf.zip
+2011 = https://www.irs.gov/pub/irs-soi/12eofinextract990pf.zip
+

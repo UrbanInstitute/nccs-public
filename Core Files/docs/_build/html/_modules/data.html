@@ -1,0 +1,780 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>data &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for data</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="k">import</span> <span class="n">xor</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">pymysql</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+
+<span class="kn">from</span> <span class="nn">load_data</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="check_folder"><a class="viewcode-back" href="../data.html#data.check_folder">[docs]</a><span class="k">def</span> <span class="nf">check_folder</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks the given path for the specified folder then returns the folder name.  If the folder does</span>
+<span class="sd">    not exist at this path, the folder is created first.</span>
+
+<span class="sd">    ARGUMENTS</span>
+<span class="sd">    path (str) : Base path on local system</span>
+<span class="sd">    folder (str) : Folder name to check for in the base path</span>
+
+<span class="sd">    RETURNS</span>
+<span class="sd">    str: Folder</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="n">full_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">folder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">full_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">folder</span></div>
+
+<div class="viewcode-block" id="clear_files"><a class="viewcode-back" href="../data.html#data.clear_files">[docs]</a><span class="k">def</span> <span class="nf">clear_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Removes all existing .csv files from the specified path.</span>
+
+<span class="sd">    ARGUMENTS</span>
+<span class="sd">    path (str) : Base path on local system</span>
+<span class="sd">    folder (str) : Folder name to check for in the base path</span>
+
+<span class="sd">    RETURNS</span>
+<span class="sd">    None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.csv&#39;</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="BMFShare"><a class="viewcode-back" href="../data.html#data.BMFShare">[docs]</a><span class="k">class</span> <span class="nc">BMFShare</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class holds methods that are used by both the NCCS core file process, and the NCCS BMF process.</span>
+<span class="sd">    They are separated from the Data class solely for the purposes of inheritance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="BMFShare.bmf"><a class="viewcode-back" href="../data.html#data.BMFShare.bmf">[docs]</a>    <span class="k">def</span> <span class="nf">bmf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downloads the raw BMF data from the IRS, rearranges a few columns (splitting, combining, cleaning),</span>
+<span class="sd">        then passes the data and lists of the columns to the bmf_create method.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="n">all_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ORGANIZATION&#39;</span><span class="p">,</span> <span class="s1">&#39;ZIP&#39;</span><span class="p">,</span> <span class="s1">&#39;ACTIVITY&#39;</span><span class="p">,</span> <span class="s1">&#39;AFFILIATION&#39;</span><span class="p">,</span> <span class="s1">&#39;DEDUCTIBILITY&#39;</span><span class="p">,</span> <span class="s1">&#39;ICO&#39;</span><span class="p">,</span> <span class="s1">&#39;SORT_NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;FILING_REQ_CD&#39;</span><span class="p">,</span> <span class="s1">&#39;PF_FILING_REQ_CD&#39;</span><span class="p">]</span>
+        <span class="n">pf_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ASSET_CD&#39;</span><span class="p">,</span> <span class="s1">&#39;INCOME_CD&#39;</span><span class="p">]</span>
+        <span class="n">copc_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;STATUS&#39;</span><span class="p">]</span>
+
+        <span class="n">bmf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_bmf</span><span class="p">()</span>
+
+        <span class="c1">#bmf = bmf[all_cols+pf_cols+copc_cols]#.copy(deep=True) #moved to bmf_create method</span>
+
+        <span class="n">bmf</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ORGANIZATION&#39;</span><span class="p">:</span><span class="s1">&#39;ORGCD&#39;</span><span class="p">,</span> <span class="s1">&#39;AFFILIATION&#39;</span><span class="p">:</span><span class="s1">&#39;AFCD&#39;</span><span class="p">,</span> <span class="s1">&#39;DEDUCTIBILITY&#39;</span><span class="p">:</span><span class="s1">&#39;DEDUCTCD&#39;</span><span class="p">,</span>
+                           <span class="s1">&#39;ICO&#39;</span><span class="p">:</span><span class="s1">&#39;CONTACT&#39;</span><span class="p">,</span> <span class="s1">&#39;SORT_NAME&#39;</span><span class="p">:</span><span class="s1">&#39;SEC_NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;ASSET_CD&#39;</span><span class="p">:</span><span class="s1">&#39;ASS_CODE&#39;</span><span class="p">,</span>
+                           <span class="s1">&#39;INCOME_CD&#39;</span><span class="p">:</span><span class="s1">&#39;INC_CODE&#39;</span><span class="p">,</span> <span class="s1">&#39;STATUS&#39;</span><span class="p">:</span><span class="s1">&#39;EOSTATUS&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;CONTACT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;CONTACT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;%&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
+        <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;FRCD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;FILING_REQ_CD&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;PF_FILING_REQ_CD&#39;</span><span class="p">]</span>
+        <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIV1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIVITY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIV2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIVITY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>
+        <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIV3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="s1">&#39;ACTIVITY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span>
+
+        <span class="n">all_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ORGCD&#39;</span><span class="p">,</span> <span class="s1">&#39;ZIP&#39;</span><span class="p">,</span> <span class="s1">&#39;AFCD&#39;</span><span class="p">,</span> <span class="s1">&#39;DEDUCTCD&#39;</span><span class="p">,</span> <span class="s1">&#39;CONTACT&#39;</span><span class="p">,</span> <span class="s1">&#39;SEC_NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;FRCD&#39;</span><span class="p">,</span> <span class="s1">&#39;ACTIV1&#39;</span><span class="p">,</span> <span class="s1">&#39;ACTIV2&#39;</span><span class="p">,</span> <span class="s1">&#39;ACTIV3&#39;</span><span class="p">]</span>
+        <span class="n">pf_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ASS_CODE&#39;</span><span class="p">,</span> <span class="s1">&#39;INC_CODE&#39;</span><span class="p">]</span>
+        <span class="n">copc_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;EOSTATUS&#39;</span><span class="p">]</span>
+
+        <span class="n">bmf_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_cols</span><span class="p">,</span> <span class="n">copc_cols</span><span class="p">,</span> <span class="n">pf_cols</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bmf_create</span><span class="p">(</span><span class="n">bmf</span><span class="p">,</span> <span class="n">bmf_cols</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BMFShare.bmf_create"><a class="viewcode-back" href="../data.html#data.BMFShare.bmf_create">[docs]</a>    <span class="k">def</span> <span class="nf">bmf_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bmf</span><span class="p">,</span> <span class="n">bmf_cols</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is split from the main bmf method because this portion is used in the Core file creation but</span>
+<span class="sd">        overridden in the BMF process.  It subsets the BMF data by the column lists it receives from the bmf</span>
+<span class="sd">        method, then merges it into the main core file data by EIN.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        bmf (DataFrame) : The BMF data</span>
+<span class="sd">        bmf_cols (list) : The desired columns of the BMF data</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">all_cols</span><span class="p">,</span> <span class="n">copc_cols</span><span class="p">,</span> <span class="n">pf_cols</span> <span class="o">=</span> <span class="n">bmf_cols</span>
+        <span class="n">bmf</span> <span class="o">=</span> <span class="n">bmf</span><span class="p">[</span><span class="n">all_cols</span><span class="o">+</span><span class="n">pf_cols</span><span class="o">+</span><span class="n">copc_cols</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;Full&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;Full&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;Full&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">bmf</span><span class="p">[</span><span class="n">all_cols</span><span class="o">+</span><span class="n">copc_cols</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged BMF data with Full.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">bmf</span><span class="p">[</span><span class="n">all_cols</span><span class="o">+</span><span class="n">copc_cols</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged BMF data with EZ.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;PF&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">bmf</span><span class="p">[</span><span class="n">all_cols</span><span class="o">+</span><span class="n">pf_cols</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged BMF data with PF.&#39;</span><span class="p">)</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished merging BMF data with all forms.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BMFShare.fipsmsa"><a class="viewcode-back" href="../data.html#data.BMFShare.fipsmsa">[docs]</a>    <span class="k">def</span> <span class="nf">fipsmsa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the lu_fipsmsa data from SQL (or from file if it is already downloaded), then passes the data</span>
+<span class="sd">        into the fipsmsa_create method for merging.  Must be run after the NTEE data is merged in, because</span>
+<span class="sd">        that&#39;s where the FIPS column comes from that this method merges on.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;FIPS&#39;</span><span class="p">,</span> <span class="s1">&#39;PMSA&#39;</span><span class="p">,</span> <span class="s1">&#39;MSA_NECH&#39;</span><span class="p">]</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading FIPSMSA data from NCCS MySQL server...&#39;</span><span class="p">)</span>
+        <span class="n">fipsmsa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sql</span><span class="p">(</span><span class="s1">&#39;lu_fipsmsa&#39;</span><span class="p">,</span> <span class="s1">&#39;nccs&#39;</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    done.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fipsmsa_create</span><span class="p">(</span><span class="n">fipsmsa</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BMFShare.fipsmsa_create"><a class="viewcode-back" href="../data.html#data.BMFShare.fipsmsa_create">[docs]</a>    <span class="k">def</span> <span class="nf">fipsmsa_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fipsmsa</span><span class="p">,</span> <span class="n">fipsmsa_cols</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is split from the main fipsmsa method because this portion is used in the Core file creation but</span>
+<span class="sd">        overridden in the BMF process.  It handles merging the fipsmsa data into the main core file data,</span>
+<span class="sd">        by the FIPS column.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        fispmsa (DataFrame) : The fipsmsa data</span>
+<span class="sd">        fipsmsa_cols (list) : Subset of columns to take from the fipsmsa data</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">fipsmsa</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;FIPS&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged FIPSMSA columns into </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">))</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Completed merging in FIPSMSA documention.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BMFShare.ntee"><a class="viewcode-back" href="../data.html#data.BMFShare.ntee">[docs]</a>    <span class="k">def</span> <span class="nf">ntee</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the nteedocAllEins data from SQL (or file if it&#39;s already downloaded), specifying only a subset</span>
+<span class="sd">        of colunns to be part of the SQL SELECT statement due to the size of the entire ntee file (over 1.5g),</span>
+<span class="sd">        cleans hyphens out of the EIN column, then passes the data into the ntee_create method.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="c1">#removed Activ1 due to now coming from BMF downloads</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="s1">&#39;OutNccs&#39;</span><span class="p">,</span> <span class="s1">&#39;OutReas&#39;</span><span class="p">,</span> <span class="s1">&#39;NteeFinal&#39;</span><span class="p">,</span> <span class="s1">&#39;Fips&#39;</span><span class="p">,</span> <span class="s1">&#39;NteeCC&#39;</span><span class="p">,</span> <span class="s1">&#39;NteeSrc&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;NteeConf&#39;</span><span class="p">,</span> <span class="s1">&#39;FndnCd&#39;</span><span class="p">,</span> <span class="s1">&#39;NAICS&#39;</span><span class="p">,</span> <span class="s1">&#39;LONGITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;LATITUDE&#39;</span><span class="p">,</span> <span class="s1">&#39;zip5&#39;</span><span class="p">,</span> <span class="s1">&#39;Name&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;Address&#39;</span><span class="p">,</span> <span class="s1">&#39;City&#39;</span><span class="p">,</span> <span class="s1">&#39;State&#39;</span><span class="p">,</span> <span class="s1">&#39;NteeIrs&#39;</span><span class="p">,</span> <span class="s1">&#39;RuleDate&#39;</span><span class="p">,</span> <span class="s1">&#39;ClassCd&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;censusTract&#39;</span><span class="p">,</span> <span class="s1">&#39;block&#39;</span><span class="p">]</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading master NTEE data from NCCS MySQL server...&#39;</span><span class="p">)</span>
+        <span class="n">ntee</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sql</span><span class="p">(</span><span class="s1">&#39;nteedocAllEins&#39;</span><span class="p">,</span> <span class="s1">&#39;nccs&#39;</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">force_sql_cols</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">ntee</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">ntee</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="c1">#EIN column has some hyphens</span>
+        <span class="c1"># ntee.set_index(&#39;EIN&#39;, inplace=True)</span>
+        <span class="c1"># ntee.columns = [col.upper() for col in ntee.columns.values] #make all columns upper case</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    done.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ntee_create</span><span class="p">(</span><span class="n">ntee</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BMFShare.ntee_create"><a class="viewcode-back" href="../data.html#data.BMFShare.ntee_create">[docs]</a>    <span class="k">def</span> <span class="nf">ntee_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ntee</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is split from the main ntee method because this portion is used in the Core file creation but</span>
+<span class="sd">        overridden in the BMF process.  It handles merging the ntee data into the main core files.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ntee (DataFrame) : The nteedocAllEins data.</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+                        <span class="n">ntee</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged NTEE columns into </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">))</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Completed merging in master NTEE documention.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../data.html#data.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">LoadData</span><span class="p">,</span> <span class="n">BMFShare</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class holds methods intended to handle the first data steps, including loading, merging, crosswalking, and</span>
+<span class="sd">    dropping.  It does not handle the calculation of any new columns (Process), validation (Validate), or creation</span>
+<span class="sd">    of final output (Write).  Note that there are a few exceptions to the column creation exclusion, where handling</span>
+<span class="sd">    it here is far easier than later, e.g. setting the INPRIOR flag in the same place that prior year data is</span>
+<span class="sd">    merged in.  For the sake of maintainability these exceptions should be fixed, and it has been added to</span>
+<span class="sd">    the github issues list.</span>
+
+<span class="sd">    Its methods are split into three classes, the last two of which are inherited by this one.  The BMFShare class</span>
+<span class="sd">    holds Data methods that are needed for inheritance into both this class and the NCCS BMF creation process, and</span>
+<span class="sd">    the LoadData class holds methods that specifically involve loading data from the internet, SQL or from file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">main</span><span class="p">,</span> <span class="n">clear_old</span><span class="p">,</span> <span class="n">get_from_sql</span><span class="p">,</span> <span class="n">current_yr</span><span class="p">,</span> <span class="n">backfill</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main</span> <span class="o">=</span> <span class="n">main</span>
+        <span class="k">if</span> <span class="n">main</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="c1">#small exception so the validation fixer tool can create a temp instance to get at the numeric_columns values</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">irs_download_folder</span> <span class="o">=</span> <span class="n">check_folder</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;downloads&#39;</span><span class="p">,</span> <span class="s1">&#39;IRS&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nccs_download_folder</span> <span class="o">=</span> <span class="n">check_folder</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;downloads&#39;</span><span class="p">,</span> <span class="s1">&#39;NCCS&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;user-agent&#39;</span><span class="p">:</span> <span class="s1">&#39;National Center for Charitable Statistics, Data Retrieval Tool (jlevy@urban.org)&#39;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">irs_delim</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epostcard_delim</span> <span class="o">=</span> <span class="s1">&#39;|&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bmf_delim</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_old</span> <span class="o">=</span> <span class="n">clear_old</span> <span class="c1">#if True, deletes old dataframes from memory after backfill</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_from_sql</span> <span class="o">=</span> <span class="n">get_from_sql</span> <span class="c1">#if True, will attempt to connect to the NCCS data store and download ntee and fipsmsa</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sql_server_name</span> <span class="o">=</span> <span class="s1">&#39;uiresearchrds.urban.org&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sql_cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1">#stores dataframes retrieved from sql</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span>  <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior_year_df</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">droplists</span>  <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crosswalks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backfilled</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">not_crosswalked</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropped_columns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing_columns</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span> <span class="o">=</span> <span class="n">current_yr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backfill_yrs</span> <span class="o">=</span> <span class="n">backfill</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">numeric_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ACCNTINGFEES&#39;</span><span class="p">,</span><span class="s1">&#39;ACCNTSPAYABLEEND&#39;</span><span class="p">,</span><span class="s1">&#39;ACCNTSRCVBLEND&#39;</span><span class="p">,</span><span class="s1">&#39;ADVRTPROMO&#39;</span><span class="p">,</span><span class="s1">&#39;ASS_EOY&#39;</span><span class="p">,</span><span class="s1">&#39;BENIFITSMEMBRS&#39;</span><span class="p">,</span><span class="s1">&#39;BOND_EOY&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;COMPENS&#39;</span><span class="p">,</span><span class="s1">&#39;COMPNSATNANDOTHR&#39;</span><span class="p">,</span><span class="s1">&#39;CONT&#39;</span><span class="p">,</span><span class="s1">&#39;CONVERCONVENTMTNG&#39;</span><span class="p">,</span><span class="s1">&#39;CURRFRMRCVBLEND&#39;</span><span class="p">,</span><span class="s1">&#39;DEFEREDREVNUEND&#39;</span><span class="p">,</span><span class="s1">&#39;DEPRCATNDEPLETN&#39;</span><span class="p">,</span><span class="s1">&#39;DIREXP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;DUESASSESMNTS&#39;</span><span class="p">,</span><span class="s1">&#39;ESCRWACCNTLIABEND&#39;</span><span class="p">,</span><span class="s1">&#39;EXPS&#39;</span><span class="p">,</span><span class="s1">&#39;FEESFORSRVCLOBBY&#39;</span><span class="p">,</span><span class="s1">&#39;FEESFORSRVCMGMT&#39;</span><span class="p">,</span><span class="s1">&#39;FEESFORSRVCINVSTMGMT&#39;</span><span class="p">,</span><span class="s1">&#39;FEESFORSRVCOTHR&#39;</span><span class="p">,</span><span class="s1">&#39;FISYR&#39;</span><span class="p">,</span><span class="s1">&#39;FUNDBAL&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;FUNDFEES&#39;</span><span class="p">,</span><span class="s1">&#39;GOODS&#39;</span><span class="p">,</span><span class="s1">&#39;GRNSTTOINDIV&#39;</span><span class="p">,</span><span class="s1">&#39;GRNTSPAYABLEEND&#39;</span><span class="p">,</span><span class="s1">&#39;GRNTSTOFRGNGOVT&#39;</span><span class="p">,</span><span class="s1">&#39;GRNTSTOGOVT&#39;</span><span class="p">,</span><span class="s1">&#39;GRPROF&#39;</span><span class="p">,</span><span class="s1">&#39;GRSINCFNDRSNG&#39;</span><span class="p">,</span><span class="s1">&#39;GRSINCGAMING&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;GRSRNTSPRSNL&#39;</span><span class="p">,</span><span class="s1">&#39;GRSRNTSREAL&#39;</span><span class="p">,</span><span class="s1">&#39;INFOTECH&#39;</span><span class="p">,</span><span class="s1">&#39;INSURANCE&#39;</span><span class="p">,</span><span class="s1">&#39;INTANGIBLEASSETSEND&#39;</span><span class="p">,</span><span class="s1">&#39;INTERESTAMT&#39;</span><span class="p">,</span><span class="s1">&#39;INVENTG&#39;</span><span class="p">,</span><span class="s1">&#39;INVINC&#39;</span><span class="p">,</span><span class="s1">&#39;INVNTRIESALESEND&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;INVSTMNTSEND&#39;</span><span class="p">,</span><span class="s1">&#39;INVSTMNTSOTHREND&#39;</span><span class="p">,</span><span class="s1">&#39;INVSTMNTSPRGMEND&#39;</span><span class="p">,</span><span class="s1">&#39;LEGALFEES&#39;</span><span class="p">,</span><span class="s1">&#39;LESSDIRFNDRSNG&#39;</span><span class="p">,</span><span class="s1">&#39;LESSDIRGAMING&#39;</span><span class="p">,</span><span class="s1">&#39;LIAB_EOY&#39;</span><span class="p">,</span><span class="s1">&#39;LNDBLDGSEQUIPEND&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;MISCREVTOTA&#39;</span><span class="p">,</span><span class="s1">&#39;MISCREVTOT11B&#39;</span><span class="p">,</span><span class="s1">&#39;MISCREVTOT11C&#39;</span><span class="p">,</span><span class="s1">&#39;MISCREVTOT11D&#39;</span><span class="p">,</span><span class="s1">&#39;MRTG_EOY&#39;</span><span class="p">,</span><span class="s1">&#39;NETGNLS&#39;</span><span class="p">,</span><span class="s1">&#39;NETINC&#39;</span><span class="p">,</span><span class="s1">&#39;NETINCFNDRSNG&#39;</span><span class="p">,</span><span class="s1">&#39;NETINCGAMING&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;NETRENT&#39;</span><span class="p">,</span><span class="s1">&#39;NONINTCASHEND&#39;</span><span class="p">,</span><span class="s1">&#39;NOTESLOANSRCVBLEND&#39;</span><span class="p">,</span><span class="s1">&#39;OCCUPANCY&#39;</span><span class="p">,</span><span class="s1">&#39;OFFICEXPNS&#39;</span><span class="p">,</span><span class="s1">&#39;OTHINC&#39;</span><span class="p">,</span><span class="s1">&#39;OTHRASSETSEND&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREMPLYEEBENEF&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;OTHREXPNSA&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREXPNSB&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREXPNSC&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREXPNSD&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREXPNSE&#39;</span><span class="p">,</span><span class="s1">&#39;OTHREXPNSF&#39;</span><span class="p">,</span><span class="s1">&#39;OTHRLIABEND&#39;</span><span class="p">,</span><span class="s1">&#39;OTHSAL&#39;</span><span class="p">,</span><span class="s1">&#39;OVERPAY&#39;</span><span class="p">,</span><span class="s1">&#39;P1TOTEXP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;P1TOTREV&#39;</span><span class="p">,</span><span class="s1">&#39;P2TASFMV&#39;</span><span class="p">,</span><span class="s1">&#39;P2TOTAST&#39;</span><span class="p">,</span><span class="s1">&#39;P6ESTTX&#39;</span><span class="p">,</span><span class="s1">&#39;P6TEXCTX&#39;</span><span class="p">,</span><span class="s1">&#39;P6TXINV&#39;</span><span class="p">,</span><span class="s1">&#39;P6TXPNLT&#39;</span><span class="p">,</span><span class="s1">&#39;P6TXWERR&#39;</span><span class="p">,</span><span class="s1">&#39;P6TXWTH&#39;</span><span class="p">,</span><span class="s1">&#39;PAYBLETOFFCRSEND&#39;</span><span class="p">,</span><span class="s1">&#39;PAYTAX&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;PENSIONPLANCONTRB&#39;</span><span class="p">,</span><span class="s1">&#39;PLDGEGRNTRCVBLEND&#39;</span><span class="p">,</span><span class="s1">&#39;PREPAIDEXPNSEND&#39;</span><span class="p">,</span><span class="s1">&#39;PRGMSERVREV&#39;</span><span class="p">,</span><span class="s1">&#39;PROGREV&#39;</span><span class="p">,</span><span class="s1">&#39;PYMTOAFFILIATES&#39;</span><span class="p">,</span><span class="s1">&#39;RCVBLDISQUALEND&#39;</span><span class="p">,</span><span class="s1">&#39;RNTLEXPNSPRSNL&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;RNTLEXPNSREAL&#39;</span><span class="p">,</span><span class="s1">&#39;RNTLINCREAL&#39;</span><span class="p">,</span><span class="s1">&#39;RNTLINCPRSNL&#39;</span><span class="p">,</span><span class="s1">&#39;ROYALTSEXPNS&#39;</span><span class="p">,</span><span class="s1">&#39;ROYALTSINC&#39;</span><span class="p">,</span><span class="s1">&#39;SALEOTHE&#39;</span><span class="p">,</span><span class="s1">&#39;SALEOTHG&#39;</span><span class="p">,</span><span class="s1">&#39;SALEOTHN&#39;</span><span class="p">,</span><span class="s1">&#39;SALESECN&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;SALESEXP&#39;</span><span class="p">,</span><span class="s1">&#39;STYEAR&#39;</span><span class="p">,</span><span class="s1">&#39;SVNGSTEMPINVEND&#39;</span><span class="p">,</span><span class="s1">&#39;TAXDUE&#39;</span><span class="p">,</span><span class="s1">&#39;TOTEXCAPGN&#39;</span><span class="p">,</span><span class="s1">&#39;TOTEXCAPLS&#39;</span><span class="p">,</span><span class="s1">&#39;TOTNETLIABASTEND&#39;</span><span class="p">,</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">,</span><span class="s1">&#39;TOTREV2&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;TOTREV2ACOLA&#39;</span><span class="p">,</span> <span class="s1">&#39;TOTREV2BCOLA&#39;</span><span class="p">,</span> <span class="s1">&#39;TOTREV2CCOLA&#39;</span><span class="p">,</span> <span class="s1">&#39;TOTREV2DCOLA&#39;</span><span class="p">,</span> <span class="s1">&#39;TOTREV2ECOLA&#39;</span><span class="p">,</span><span class="s1">&#39;TOTREV2FCOLA&#39;</span><span class="p">,</span><span class="s1">&#39;TRAVEL&#39;</span><span class="p">,</span><span class="s1">&#39;TRAVELOFPUBLICOFFCL&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;TXEXMPTBNDSPROCEEDS&#39;</span><span class="p">,</span><span class="s1">&#39;UNSECUREDNOTESEND&#39;</span><span class="p">,</span><span class="s1">&#39;P1TOTREV&#39;</span><span class="p">,</span><span class="s1">&#39;P1TCONT&#39;</span><span class="p">,</span><span class="s1">&#39;P1INTREV&#39;</span><span class="p">,</span><span class="s1">&#39;P1DIVID&#39;</span><span class="p">,</span><span class="s1">&#39;P1GRENTS&#39;</span><span class="p">,</span><span class="s1">&#39;P1NGASTS&#39;</span><span class="p">,</span><span class="s1">&#39;P1GINVPF&#39;</span><span class="p">,</span><span class="s1">&#39;P1OTHINC&#39;</span><span class="p">,</span><span class="s1">&#39;P1TOTEXP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;P1ADMEXP&#39;</span><span class="p">,</span><span class="s1">&#39;P1CONTPD&#39;</span><span class="p">,</span><span class="s1">&#39;P1EXCREV&#39;</span><span class="p">,</span><span class="s1">&#39;P1TOTREV&#39;</span><span class="p">,</span><span class="s1">&#39;P1TOTEXP&#39;</span><span class="p">,</span><span class="s1">&#39;P14TNADJ&#39;</span><span class="p">,</span><span class="s1">&#39;P14NADJA&#39;</span><span class="p">,</span><span class="s1">&#39;P14NADJB&#39;</span><span class="p">,</span><span class="s1">&#39;P14NADJC&#39;</span><span class="p">,</span><span class="s1">&#39;P14NADJD&#39;</span><span class="p">,</span><span class="s1">&#39;P14TQDIS&#39;</span><span class="p">,</span><span class="s1">&#39;P14QDISA&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;P14QDISB&#39;</span><span class="p">,</span><span class="s1">&#39;P14QDISC&#39;</span><span class="p">,</span><span class="s1">&#39;P14QDISD&#39;</span><span class="p">,</span><span class="s1">&#39;P14TASVL&#39;</span><span class="p">,</span><span class="s1">&#39;P14ASVLA&#39;</span><span class="p">,</span><span class="s1">&#39;P14ASVLB&#39;</span><span class="p">,</span><span class="s1">&#39;P14ASVLC&#39;</span><span class="p">,</span><span class="s1">&#39;P14ASVLD&#39;</span><span class="p">,</span><span class="s1">&#39;P14T4942&#39;</span><span class="p">,</span><span class="s1">&#39;P14A4942&#39;</span><span class="p">,</span><span class="s1">&#39;P14B4942&#39;</span><span class="p">,</span><span class="s1">&#39;P14C4942&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;P14D4942&#39;</span><span class="p">,</span><span class="s1">&#39;P14TENDW&#39;</span><span class="p">,</span><span class="s1">&#39;P14ENDWA&#39;</span><span class="p">,</span><span class="s1">&#39;P14ENDWB&#39;</span><span class="p">,</span><span class="s1">&#39;P14ENDWC&#39;</span><span class="p">,</span><span class="s1">&#39;P14ENDWD&#39;</span><span class="p">,</span><span class="s1">&#39;P14TTSUP&#39;</span><span class="p">,</span><span class="s1">&#39;P14TSUPA&#39;</span><span class="p">,</span><span class="s1">&#39;P14TSUPB&#39;</span><span class="p">,</span><span class="s1">&#39;P14TSUPC&#39;</span><span class="p">,</span><span class="s1">&#39;P14TSUPD&#39;</span><span class="p">,</span><span class="s1">&#39;P14TPSUP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;P14PSUPA&#39;</span><span class="p">,</span><span class="s1">&#39;P14PSUPB&#39;</span><span class="p">,</span><span class="s1">&#39;P14PSUPC&#39;</span><span class="p">,</span><span class="s1">&#39;P14PSUPD&#39;</span><span class="p">,</span><span class="s1">&#39;P14TGINV&#39;</span><span class="p">,</span><span class="s1">&#39;P14GINVA&#39;</span><span class="p">,</span><span class="s1">&#39;P14GINVB&#39;</span><span class="p">,</span><span class="s1">&#39;P14GINVC&#39;</span><span class="p">,</span><span class="s1">&#39;P14GINVD&#39;</span><span class="p">,</span><span class="s1">&#39;P2TINVSC&#39;</span><span class="p">,</span><span class="s1">&#39;P2GVTINV&#39;</span><span class="p">,</span><span class="s1">&#39;P2CRPSTK&#39;</span><span class="p">,</span><span class="s1">&#39;P2CRPBND&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;TOTREVP&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPSP&#39;</span><span class="p">,</span> <span class="s1">&#39;ASS_BOY&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Data.apply_crosswalk"><a class="viewcode-back" href="../data.html#data.Data.apply_crosswalk">[docs]</a>    <span class="k">def</span> <span class="nf">apply_crosswalk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Crosswalks the IRS data with the NCCS variable names.  The crosswalks are retrieved from the &quot;settings/crosswalk&quot; folder.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">xwalks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crosswalks</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">not_crosswalked</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="n">header_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;crosswalk&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.txt&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+            <span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">header_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> <span class="c1">#discard headers</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">nccs</span><span class="p">,</span> <span class="n">irs</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                    <span class="n">irs</span> <span class="o">=</span> <span class="n">irs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                    <span class="n">nccs</span> <span class="o">=</span> <span class="n">nccs</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">irs</span><span class="p">]</span> <span class="o">=</span> <span class="n">nccs</span>
+                <span class="k">if</span> <span class="s1">&#39;EIN&#39;</span> <span class="ow">in</span> <span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">del</span> <span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="s1">&#39;EIN&#39;</span><span class="p">]</span> <span class="c1">#EIN is set as the index, and thus not treated as a column</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+
+            <span class="c1">#Test that there is one value to crosswalk to taxper.  Note: Python bools have int values, True=1, False=0</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;TAX_PRD&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;TAX_PD&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;A_TAX_PRD&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;TAXPRD&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span>\
+                  <span class="p">(</span><span class="s1">&#39;tax_prd&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;tax_pd&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;a_tax_prd&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;taxprd&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">val</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">),</span> <span class="s1">&#39;Found more than one value for the crosswalk to TAXPER in </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">)</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span>  <span class="s1">&#39;Expected to find one of TAX_PRD, TAX_PD or A_TAX_PRD to crosswalk to TAXPER in </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">; if there is a new one it must be added to the checks in the apply_crosswalks() method.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">)</span>
+
+            <span class="c1">#converts all columns headers to upper case, to avoid case mismatches</span>
+            <span class="n">old_vals</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">old_vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">old_vals</span><span class="p">]</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">old_vals</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">changes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">old_vals</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Crosswalk applied to </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">.  There were </span><span class="si">{}</span><span class="s1"> changes out of </span><span class="si">{}</span><span class="s1"> columns.&#39;</span><span class="o">.</span>
+                  <span class="nb">format</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">,</span> <span class="n">changes</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_vals</span><span class="p">)))</span>
+
+            <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">not_crosswalked</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">missing</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;WARNING: </span><span class="si">{}</span><span class="s1"> columns failed to crosswalk; see nccs.data.not_crosswalked[&quot;</span><span class="si">{}</span><span class="s1">&quot;][&quot;</span><span class="si">{}</span><span class="s1">&quot;] for details.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">),</span> <span class="n">form</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">))</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All crosswalks applied.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.drop_missing"><a class="viewcode-back" href="../data.html#data.Data.drop_missing">[docs]</a>    <span class="k">def</span> <span class="nf">drop_missing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Drops &quot;zero filers&quot; when ALL of the values for a given EIN over the columns specified in the &quot;drop if missing&quot;</span>
+<span class="sd">        folder are 0 or N.  The columns to consider are stored in the &quot;settings/drop if missing&quot; folder.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span>
+        <span class="n">xwalks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crosswalks</span>
+
+        <span class="n">drop_criteria</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">,</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">drop_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">drop_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;drop if missing&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.txt&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">drop_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> <span class="c1">#drop the line of instructions at the top</span>
+
+                <span class="c1">#tries to crosswalk the entry from the droplist, but if it&#39;s not in the crosswalk then it is appended as-is</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">drop_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xwalks</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()])</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="n">drop_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">droplists</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">drop_list</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+            <span class="n">start_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">droplists</span><span class="p">[</span><span class="n">form</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1">#if no columns are specified in the text file, prevents dropping all obs</span>
+                <span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">df</span><span class="p">[</span><span class="n">drop_list</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">drop_criteria</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="n">end_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">])</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> observations dropped from </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1"> due to missing all values from droplist.&#39;</span><span class="o">.</span>
+                  <span class="nb">format</span><span class="p">(</span><span class="n">start_obs</span><span class="o">-</span><span class="n">end_obs</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span><span class="p">,</span> <span class="n">form</span><span class="p">))</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Observations missing all values from &quot;drop if missing&quot; dropped.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.drop_on_values"><a class="viewcode-back" href="../data.html#data.Data.drop_on_values">[docs]</a>    <span class="k">def</span> <span class="nf">drop_on_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for dropping only specific values of the data.  Currently only used to remove SUBSECCD != 92</span>
+<span class="sd">        from the PF data.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">form</span> <span class="o">==</span> <span class="s1">&#39;PF&#39;</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;SUBSECCD&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;92&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">form</span> <span class="o">==</span> <span class="s1">&#39;EZ&#39;</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">elif</span> <span class="n">form</span> <span class="o">==</span> <span class="s1">&#39;Full&#39;</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Data.backfill"><a class="viewcode-back" href="../data.html#data.Data.backfill">[docs]</a>    <span class="k">def</span> <span class="nf">backfill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accesses the main dataset at the top level (from init_final()), then fills in missing EINs</span>
+<span class="sd">        from one year previous.  Then repeats the step on the newly expanded data from two years</span>
+<span class="sd">        previous, out to as many periods as are specified.</span>
+
+<span class="sd">        The data for backfilling is retrieved from SQL (or from file if it is already downloaded).</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">backfill</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backfill_yrs</span> <span class="c1">#int, 0, 1, 2, 3</span>
+        <span class="n">current_yr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span> <span class="c1">#int, 2014, 2015</span>
+        <span class="n">backfill_years</span> <span class="o">=</span> <span class="p">[</span><span class="n">current_yr</span> <span class="o">-</span> <span class="n">y</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">backfill</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="c1">#list, [2014, 2013, 2012] if current_yr = 2015</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backfilled</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">if</span> <span class="n">form</span> <span class="o">==</span> <span class="s1">&#39;CO&#39;</span><span class="p">:</span>
+                <span class="n">dbase</span> <span class="o">=</span> <span class="s1">&#39;coreco&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dbase</span> <span class="o">=</span> <span class="s1">&#39;nccs&#39;</span>
+
+            <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">backfill_years</span><span class="p">:</span>
+                <span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;core</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading prior release </span><span class="si">{}</span><span class="s1"> from MySQL...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+                <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sql</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">dbase</span><span class="p">,</span> <span class="n">match_dtypes</span><span class="o">=</span><span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">])</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    success.&#39;</span><span class="p">)</span>
+
+                <span class="n">old</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fname</span>
+
+                <span class="n">old</span> <span class="o">=</span> <span class="n">old</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">old</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">]]</span>
+
+                <span class="c1">#turn some of the prior year columns into numbers</span>
+                <span class="k">if</span> <span class="n">form</span> <span class="o">!=</span> <span class="s1">&#39;PF&#39;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;TOTREVP&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPSP&#39;</span><span class="p">,</span> <span class="s1">&#39;ASS_BOY&#39;</span><span class="p">]:</span>
+                        <span class="n">old</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">old</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+                <span class="n">current_eins</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+                <span class="n">prev_yr_eins</span> <span class="o">=</span> <span class="n">old</span><span class="o">.</span><span class="n">index</span>
+                <span class="n">eins_to_backfill</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="nb">set</span><span class="p">(</span><span class="n">prev_yr_eins</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">current_eins</span><span class="p">)</span> <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">backfilled</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">eins_to_backfill</span>
+
+                <span class="n">backfill_obs</span> <span class="o">=</span> <span class="n">old</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eins_to_backfill</span><span class="p">]</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">],</span> <span class="n">backfill_obs</span><span class="p">])</span>
+
+                <span class="c1">#since the older builds from the SQL days don&#39;t have these columns, their NaNs must be filled with the proper starting state</span>
+                <span class="c1">#this should no longer matter once 2013 and earlier releases are out of rotation</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">validation_state_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">validation_state_column_name</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">unchanged</span><span class="p">)</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">manual_fix_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">manual_fix_column_name</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Backfilled </span><span class="si">{}</span><span class="s1"> observations into </span><span class="si">{}</span><span class="s1"> from </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">backfill_obs</span><span class="p">),</span> <span class="n">form</span><span class="p">,</span> <span class="n">year</span><span class="p">))</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All missing EINs backfilled from previous releases.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.init_final"><a class="viewcode-back" href="../data.html#data.Data.init_final">[docs]</a>    <span class="k">def</span> <span class="nf">init_final</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method copies the final EZ, Full and PF data from the nccs.data level to the nccs base level,</span>
+<span class="sd">        before it is combined and split into the CO, PC and PF files.</span>
+
+<span class="sd">        Note that this step is mainly redundant after changes to backfilling and prior data handling, but it</span>
+<span class="sd">        was nearly costless to leave in and quite a pain to remove.  The only relevant part is the adding of</span>
+<span class="sd">        the validation tracking columns at the end, but that could easily be moved to the backfilling</span>
+<span class="sd">        method.  Removing this method has been added to the github issues list.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1">#initialize the final product dataset</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clear_old</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1">#add the validation tracking columns here, because they may exist in the backfilling data</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">validation_state_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">unchanged</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">main</span><span class="o">.</span><span class="n">validate</span><span class="o">.</span><span class="n">manual_fix_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span></div>
+
+<div class="viewcode-block" id="Data.epostcard"><a class="viewcode-back" href="../data.html#data.Data.epostcard">[docs]</a>    <span class="k">def</span> <span class="nf">epostcard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downloads the IRS epostcard (990N) data, then merges in the YEAR column on EIN for the Full and EZ files.</span>
+<span class="sd">        Later, in the Process stage, this columns is checked against the FISYR column to turn it into a yes/no entry</span>
+<span class="sd">        for whether a firm filed a 990N in the same year as an EZ or Full 990.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span> <span class="ow">or</span> <span class="s1">&#39;Full&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">df_epost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_epostcard</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="s1">&#39;Full&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;Full&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;Full&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_epost</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged EPOSTCARD data with Full.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_epost</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Merged EPOSTCARD data with EZ.&#39;</span><span class="p">)</span>
+
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished merging EPOSTCARD data for 990n indicator.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.prior_year"><a class="viewcode-back" href="../data.html#data.Data.prior_year">[docs]</a>    <span class="k">def</span> <span class="nf">prior_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merges selected prior year variables into current data, appending &#39;P&#39; to the end OR changing &#39;EOY&#39; to &#39;BOY&#39;</span>
+<span class="sd">        (end of prior year value becomes beginning of current year value).</span>
+
+<span class="sd">        It then tests that the FISYR for the prior year data (renamed FISYRP) is the year before the current</span>
+<span class="sd">        FISYR (i.e. FISYRP = FISYR - 1), then nulls all the merged data where this is not true.  It uses this</span>
+<span class="sd">        same criteria to fill in the INPIOR column with 1 where FISYRP = FISYR - 1 and 0 otherwise.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="s1">&#39;ASS_EOY&#39;</span><span class="p">,</span> <span class="s1">&#39;BOND_EOY&#39;</span><span class="p">,</span> <span class="s1">&#39;MRTG_EOY&#39;</span><span class="p">,</span> <span class="s1">&#39;LIAB_EOY&#39;</span><span class="p">,</span> <span class="s1">&#39;TAXPER&#39;</span><span class="p">,</span> <span class="s1">&#39;FISYR&#39;</span><span class="p">,</span> <span class="s1">&#39;PROGREV&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;INVINC&#39;</span><span class="p">,</span> <span class="s1">&#39;NETRENT&#39;</span><span class="p">,</span> <span class="s1">&#39;SALESECN&#39;</span><span class="p">,</span> <span class="s1">&#39;SALEOTHN&#39;</span><span class="p">,</span> <span class="s1">&#39;FUNDINC&#39;</span><span class="p">,</span> <span class="s1">&#39;GRPROF&#39;</span><span class="p">,</span> <span class="s1">&#39;OTHINC&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;TOTREV&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPS&#39;</span><span class="p">,</span> <span class="s1">&#39;NETINC&#39;</span><span class="p">,</span> <span class="s1">&#39;COMPENS&#39;</span><span class="p">,</span> <span class="s1">&#39;OTHSAL&#39;</span><span class="p">,</span> <span class="s1">&#39;PAYTAX&#39;</span><span class="p">,</span> <span class="s1">&#39;FUNDFEES&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;CONT&#39;</span><span class="p">,</span> <span class="s1">&#39;RETEARN&#39;</span><span class="p">,</span> <span class="s1">&#39;FUNDBAL&#39;</span><span class="p">,</span> <span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span><span class="c1"># &#39;DocCD&#39;, &#39;DUES&#39;]</span>
+        <span class="n">ocols</span> <span class="o">=</span> <span class="p">[(</span><span class="n">c</span><span class="o">+</span><span class="s1">&#39;P&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;EOYP&#39;</span><span class="p">,</span> <span class="s1">&#39;BOY&#39;</span><span class="p">)</span>\
+                        <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;RETEARNP&#39;</span><span class="p">,</span> <span class="s1">&#39;RETE_BOY&#39;</span><span class="p">)</span>\
+                        <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;FUNDBALP&#39;</span><span class="p">,</span> <span class="s1">&#39;NETA_BOY&#39;</span><span class="p">)</span>\
+                        <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;SOURCEP&#39;</span><span class="p">,</span> <span class="s1">&#39;INPRIORSRC&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+        <span class="n">ocols</span> <span class="o">=</span> <span class="n">ocols</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="c1">#cut off EINP</span>
+        <span class="n">rename_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">ocols</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">_prior_year</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">form</span><span class="p">):</span>
+
+            <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="s1">&#39;core</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading prior release </span><span class="si">{}</span><span class="s1"> from MySQL...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">form</span> <span class="o">==</span> <span class="s1">&#39;CO&#39;</span><span class="p">:</span>
+                <span class="n">dbase</span> <span class="o">=</span> <span class="s1">&#39;coreco&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dbase</span> <span class="o">=</span> <span class="s1">&#39;nccs&#39;</span>
+            <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sql</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">dbase</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">match_dtypes</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    success.&#39;</span><span class="p">)</span>
+
+            <span class="c1"># old = old[cols]</span>
+            <span class="n">old</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_dict</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">merged</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1">#finds the indexes where the past FISYR (FISYRP) is not equal to the current FISYR - 1</span>
+            <span class="c1">#note that this includes any entry where FISYR or FISYRP are NaN</span>
+            <span class="n">merged</span><span class="p">[</span><span class="s1">&#39;bad_fisyr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">~</span><span class="n">merged</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">FISYR</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">FISYRP</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1">#replaces the newly-merged values with NaN if FISYRP != FISYR - 1</span>
+            <span class="n">bad_ilocs</span> <span class="o">=</span> <span class="n">merged</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()[</span><span class="n">merged</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()[</span><span class="s1">&#39;bad_fisyr&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">index</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">bad_ilocs</span><span class="p">,</span> <span class="p">[</span><span class="n">merged</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">ocols</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+
+            <span class="c1">#assign all columns to INRPIOR=yes, then go back and reassign INPRIOR=no where necessary</span>
+            <span class="n">merged</span><span class="p">[</span><span class="s1">&#39;INPRIOR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;1&#39;</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">bad_ilocs</span><span class="p">,</span> <span class="n">merged</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="s1">&#39;INPRIOR&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="s1">&#39;0&#39;</span>
+            <span class="k">del</span> <span class="n">merged</span><span class="p">[</span><span class="s1">&#39;bad_fisyr&#39;</span><span class="p">]</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">merged</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+
+            <span class="c1">#turn some of the prior year columns into numbers</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;TOTREVP&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPSP&#39;</span><span class="p">,</span> <span class="s1">&#39;ASS_BOY&#39;</span><span class="p">]:</span>
+                <span class="n">merged</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">merged</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span>
+
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    merged into </span><span class="si">{}</span><span class="s1"> successfully.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">merged</span>
+
+        <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Loading prior year NCCS release data...&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CO&#39;</span><span class="p">,</span> <span class="s1">&#39;PC&#39;</span><span class="p">]:</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">_prior_year</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">],</span> <span class="n">form</span><span class="p">)</span>
+
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All past data loaded.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.check_columns"><a class="viewcode-back" href="../data.html#data.Data.check_columns">[docs]</a>    <span class="k">def</span> <span class="nf">check_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks the columns in the final ouput against the columns expected to be present in the final</span>
+<span class="sd">        output.  Drops extra columns and logs any missing ones.</span>
+
+<span class="sd">        The expected columns are retrieved from &quot;settings/final variable list&quot; folder.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Validating final columns based on contents of &quot;final variable lists&quot; folder...&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">output_full</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CO&#39;</span><span class="p">,</span> <span class="s1">&#39;PC&#39;</span><span class="p">]:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;990&#39;</span><span class="p">))]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1">#split out only the entries from CO or PC that come from the Full 990</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="o">+</span><span class="s1">&#39;_full&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
+                <span class="k">assert</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="o">+</span><span class="s1">&#39;_full&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="c1">#PF, CO, PC, CO_full, PC_full</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;final variable lists&#39;</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">desired_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]</span>
+            <span class="n">desired_cols</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;VALIDATION_STATE&#39;</span><span class="p">,</span> <span class="s1">&#39;MANUALLY_FIXED&#39;</span><span class="p">]</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+
+            <span class="n">drops</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">desired_cols</span><span class="p">:</span>
+                    <span class="n">drops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drops</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dropped_columns</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">drops</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;   dropped </span><span class="si">{}</span><span class="s1"> columns from </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">drops</span><span class="p">),</span> <span class="n">form</span><span class="p">))</span>
+
+            <span class="n">missing</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">desired_cols</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                    <span class="n">missing</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">missing_columns</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">missing</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    found </span><span class="si">{}</span><span class="s1"> missing columns from </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">),</span> <span class="n">form</span><span class="p">))</span>
+
+            <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished validating columns.  See the dicts at nccs.data.dropped_columns and nccs.data.missing_columns for details.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Data.make_numeric"><a class="viewcode-back" href="../data.html#data.Data.make_numeric">[docs]</a>    <span class="k">def</span> <span class="nf">make_numeric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handles converting the dtypes for columns that are used in mathematical operations later into floats, from the default strings.</span>
+
+<span class="sd">        This method should be generalized, or, better yet, dtypes should be made explicit from the beginning.  This is raised as a</span>
+<span class="sd">        github issue.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">num_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">:</span>
+                <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1">#recast the str columns to float64 or int64</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Recast </span><span class="si">{}</span><span class="s1"> columns as numeric for form </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">num_cols</span><span class="p">),</span> <span class="n">form</span><span class="p">))</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished initializing final dataframes.  Check nccs.data.numeric_columns dictionary for details.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

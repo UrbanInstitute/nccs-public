@@ -1,0 +1,11 @@
+The core program will store content downloaded from the NCCS MySQL server here, for ease of future use.  If you want the program to download the file anew, it must be deleted from here.
+
+If you do not have access to the NCCS MySQL server (only available from Urban IP addresses), then you can run the program by manually placing the appropriate files here:
+
+lu_fipsmsa.csv
+nteedocAllEins.csv
+coreYYYYco.csv
+coreYYYYpc.csv
+coreYYYYpf.csv
+
+Where the "coreYYYY" files are every prior NCCS release necessary for backfilling and building prior year columns - the minimum is one year before the year being built, but usually you will need the prior three.

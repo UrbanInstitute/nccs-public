@@ -1,0 +1,4 @@
+region1 = https://www.irs.gov/pub/irs-soi/eo1.csv
+region2 = https://www.irs.gov/pub/irs-soi/eo2.csv
+region3 = https://www.irs.gov/pub/irs-soi/eo3.csv
+region4 = https://www.irs.gov/pub/irs-soi/eo4.csv

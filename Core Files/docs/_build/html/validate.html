@@ -1,0 +1,207 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>validate module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="validate_full module" href="validate_full.html" />
+    <link rel="prev" title="process_co_pc module" href="process_co_pc.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-validate">
+<span id="validate-module"></span><h1>validate module<a class="headerlink" href="#module-validate" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="validate.Validate">
+<em class="property">class </em><code class="descclassname">validate.</code><code class="descname">Validate</code><span class="sig-paren">(</span><em>main</em>, <em>tolerance</em>, <em>do_validation</em>, <em>partial_validation</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="validate_ez.html#validate_ez.ValidateEZ" title="validate_ez.ValidateEZ"><code class="xref py py-class docutils literal"><span class="pre">validate_ez.ValidateEZ</span></code></a>, <a class="reference internal" href="validate_full.html#validate_full.ValidateFull" title="validate_full.ValidateFull"><code class="xref py py-class docutils literal"><span class="pre">validate_full.ValidateFull</span></code></a>, <a class="reference internal" href="validate_pf.html#validate_pf.ValidatePF" title="validate_pf.ValidatePF"><code class="xref py py-class docutils literal"><span class="pre">validate_pf.ValidatePF</span></code></a></p>
+<p>Base class for validating the data, including testing observations and flagging errors, as well as
+outputting particularly large firms for additional scrutiny.  Also then re-integrates that same
+data when it finds it in the “fixed validation” folder.</p>
+<dl class="method">
+<dt id="validate.Validate.extract">
+<code class="descname">extract</code><span class="sig-paren">(</span><em>qtile=0.999</em>, <em>pchan=0.5</em>, <em>cutoff=10000000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for extracting the largest and most-changed firms for additional validation.</p>
+<p>ARGUMENTS
+qtile (float) : Quartile cutoff to define the “largest” firms
+pchan (float) : Percent change in revenue, assets or expenses that qualfies as a “big change”
+cutoff (int) : Revenue threshold below which we ignore large changes as defined by pchan</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validate.Validate.integrate_fixes">
+<code class="descname">integrate_fixes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.integrate_fixes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.integrate_fixes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for handling the incorporation of fixed validation errors back into the data.  If the
+validation fixer has been used to generate fixes, they will automatically be in the right place
+and in the right configuration for this method to find and use.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validate.Validate.to_file">
+<code class="descname">to_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for writing EINs flagged for validation out to the “validation failures” folder.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validate.Validate.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><em>df</em>, <em>failed_validation</em>, <em>col_name</em>, <em>form</em>, <em>sub_form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method used on a per-column basis to see if there are any validation failures.  This is called from
+within each of the form-specific validation classes (e.g. validate_full.py) after the calculation
+has been done.</p>
+<p>ARGUMENTS
+df (DataFrame) : The entire dataframe for the form being validated
+failed_validation (bool) : The current status of the form
+col_name (str) : The name of the column being validated, e.g. validate_fu_netgnls
+form (str) : The current form, along the release axis of CO, PC or PF
+sub_form (str) : The source form, along the IRS axis of EZ, Full or PF (for logging purposes)</p>
+<p>RETURNS
+DataFrame
+Bool</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validate.Validate.validate_columns">
+<code class="descname">validate_columns</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.validate_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.validate_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for entering the process to validation calucations.  Begins by integrating any fixes found
+in the validation fixes folder, then calls the validation methods for each form.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validate.Validate.validate_form">
+<code class="descname">validate_form</code><span class="sig-paren">(</span><em>df</em>, <em>form</em>, <em>failed_validation</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate.html#Validate.validate_form"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate.Validate.validate_form" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarizes the validation status of a given form, once all columns have been analyzed.  It then handles
+logging, and setting up the validation output for the to_file method.</p>
+<p>ARGUMENTS
+df (DataFrame) : The form being summarized
+form (str) : Name of the form
+failed_validation (bool) : The flag from the validate method indicating whether there were any</p>
+<blockquote>
+<div>failures for this form</div></blockquote>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">Build</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">Load Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">Process CO PC</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">Validate PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="process_co_pc.html" title="previous chapter">process_co_pc module</a></li>
+      <li>Next: <a href="validate_full.html" title="next chapter">validate_full module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/validate.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,341 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>process module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="process_co_pc module" href="process_co_pc.html" />
+    <link rel="prev" title="main module" href="main.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-process">
+<span id="process-module"></span><h1>process module<a class="headerlink" href="#module-process" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="process.Deduplicate">
+<em class="property">class </em><code class="descclassname">process.</code><code class="descname">Deduplicate</code><a class="reference internal" href="_modules/process.html#Deduplicate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Deduplicate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class that holds the deduplicate method, which knows how to select the “best” of any given EIN that
+shows up more than once in the index.  This was originally split into its own class so it could be
+inherited in multiple places, but that is now redundant; it is only inherited and called by the Write
+class.</p>
+<dl class="method">
+<dt id="process.Deduplicate.deduplicate">
+<code class="descname">deduplicate</code><span class="sig-paren">(</span><em>source</em>, <em>form</em>, <em>dup_criteria</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Deduplicate.deduplicate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Deduplicate.deduplicate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for efficiently removing duplicate EINs based on criteria specified in functions found in
+process_co_pc and process_pf.</p>
+<p>Originally the process was handled by building a column of tuples to sort by, but because of the
+large apply it was very slow.  The new process works by building temporary columns in order to take
+advanrage of vectorized operations under the hood of Pandas.</p>
+<p>ARGUMENTS
+source (dict) : A dictionary of DataFrames
+form (str) : The current form, e.g. ‘CO’, ‘PC’
+dup_criteria (func) : The appropriate function for deduplicating the current form</p>
+<p>RETURNS
+DataFrame (with unique index)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="process.Process">
+<em class="property">class </em><code class="descclassname">process.</code><code class="descname">Process</code><span class="sig-paren">(</span><em>main</em>, <em>parallelize=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="process_pf.html#process_pf.ProcessPF" title="process_pf.ProcessPF"><code class="xref py py-class docutils literal"><span class="pre">process_pf.ProcessPF</span></code></a>, <a class="reference internal" href="process_ez.html#process_ez.ProcessEZ" title="process_ez.ProcessEZ"><code class="xref py py-class docutils literal"><span class="pre">process_ez.ProcessEZ</span></code></a>, <a class="reference internal" href="process_full.html#process_full.ProcessFull" title="process_full.ProcessFull"><code class="xref py py-class docutils literal"><span class="pre">process_full.ProcessFull</span></code></a>, <a class="reference internal" href="#process.Deduplicate" title="process.Deduplicate"><code class="xref py py-class docutils literal"><span class="pre">process.Deduplicate</span></code></a></p>
+<p>Base class for the calculation of all new columns in the core files.  It holds the methods to create
+any columns that appear in all three 990 forms (calculated at the initial Full-EZ-PF level, not the
+final CO-PC-PF level), while it inherits the methods used by only one or two of the forms from the
+ProcessPF, ProcessEZ and ProcessFull classes.</p>
+<dl class="method">
+<dt id="process.Process.all_accper">
+<code class="descname">all_accper</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_accper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_accper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as just the non-year portion (accounting period) of the TAXPER column.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_fisyr">
+<code class="descname">all_fisyr</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_fisyr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_fisyr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as just the year portion of the TAXPER column.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_level1">
+<code class="descname">all_level1</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_level1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_level1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on SUBSECCD and FNDNCD.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_level2">
+<code class="descname">all_level2</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_level2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_level2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on SUBSECCD, FNDNCD, LEVEL3 and NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_level3">
+<code class="descname">all_level3</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_level3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_level3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_level4">
+<code class="descname">all_level4</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_level4"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_level4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and NTEEFINAL1.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_majgrpb">
+<code class="descname">all_majgrpb</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_majgrpb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_majgrpb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_nccskey">
+<code class="descname">all_nccskey</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_nccskey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_nccskey" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates two new string columns, one in the form EIN+TAXPER, the other EIN+FISYR.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Two Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_ntee1">
+<code class="descname">all_ntee1</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_ntee1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_ntee1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEEFINAL1 and LEVEL4</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_nteecc">
+<code class="descname">all_nteecc</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_nteecc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_nteecc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as a suibset of the NTEEFINAL columns.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_nteefinal1">
+<code class="descname">all_nteefinal1</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_nteefinal1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_nteefinal1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and LEVEL4.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_ntmaj10">
+<code class="descname">all_ntmaj10</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_ntmaj10"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_ntmaj10" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_ntmaj12">
+<code class="descname">all_ntmaj12</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_ntmaj12"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_ntmaj12" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_ntmaj5">
+<code class="descname">all_ntmaj5</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_ntmaj5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_ntmaj5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a piecewise value based on NATMAJ10, which is in turn calculated from NTEEFINAL.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series or dask.core.DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.all_randnum">
+<code class="descname">all_randnum</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.all_randnum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.all_randnum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a NumPy array of random numbers, the same length as the core file dataframe.</p>
+<p>ARGUMENTS
+df (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Array</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.calculate_columns">
+<code class="descname">calculate_columns</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.calculate_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.calculate_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for creating all new, calculated columns in the core files.  The option to parallelize
+the calculations using Dask was added here, but was not found to speed the apply process up, so
+its use is not recommended.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.manual_fixes">
+<code class="descname">manual_fixes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.manual_fixes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.manual_fixes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for applying any manual, one-time fixes to the data.  This is usually defined as a change
+to a single EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process.Process.parallel_apply">
+<code class="descname">parallel_apply</code><span class="sig-paren">(</span><em>df</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process.html#Process.parallel_apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process.Process.parallel_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Experimental.</p>
+<p>ARGUMENTS
+df (dask.core.DataFrame) : A Dask dataframe
+func (func) : The function that needs to be applied in parallel</p>
+<p>RETURNS
+dask.core.DataFrame</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="main.html" title="previous chapter">main module</a></li>
+      <li>Next: <a href="process_co_pc.html" title="next chapter">process_co_pc module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/process.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

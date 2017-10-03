@@ -1,0 +1,349 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>data module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="load_data module" href="load_data.html" />
+    <link rel="prev" title="build_nccs module" href="build_nccs.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-data">
+<span id="data-module"></span><h1>data module<a class="headerlink" href="#module-data" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="data.BMFShare">
+<em class="property">class </em><code class="descclassname">data.</code><code class="descname">BMFShare</code><a class="reference internal" href="_modules/data.html#BMFShare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This class holds methods that are used by both the NCCS core file process, and the NCCS BMF process.
+They are separated from the Data class solely for the purposes of inheritance.</p>
+<dl class="method">
+<dt id="data.BMFShare.bmf">
+<code class="descname">bmf</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.bmf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.bmf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads the raw BMF data from the IRS, rearranges a few columns (splitting, combining, cleaning),
+then passes the data and lists of the columns to the bmf_create method.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.BMFShare.bmf_create">
+<code class="descname">bmf_create</code><span class="sig-paren">(</span><em>bmf</em>, <em>bmf_cols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.bmf_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.bmf_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is split from the main bmf method because this portion is used in the Core file creation but
+overridden in the BMF process.  It subsets the BMF data by the column lists it receives from the bmf
+method, then merges it into the main core file data by EIN.</p>
+<p>ARGUMENTS
+bmf (DataFrame) : The BMF data
+bmf_cols (list) : The desired columns of the BMF data</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.BMFShare.fipsmsa">
+<code class="descname">fipsmsa</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.fipsmsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.fipsmsa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the lu_fipsmsa data from SQL (or from file if it is already downloaded), then passes the data
+into the fipsmsa_create method for merging.  Must be run after the NTEE data is merged in, because
+that’s where the FIPS column comes from that this method merges on.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.BMFShare.fipsmsa_create">
+<code class="descname">fipsmsa_create</code><span class="sig-paren">(</span><em>fipsmsa</em>, <em>fipsmsa_cols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.fipsmsa_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.fipsmsa_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is split from the main fipsmsa method because this portion is used in the Core file creation but
+overridden in the BMF process.  It handles merging the fipsmsa data into the main core file data,
+by the FIPS column.</p>
+<p>ARGUMENTS
+fispmsa (DataFrame) : The fipsmsa data
+fipsmsa_cols (list) : Subset of columns to take from the fipsmsa data</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.BMFShare.ntee">
+<code class="descname">ntee</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.ntee"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.ntee" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the nteedocAllEins data from SQL (or file if it’s already downloaded), specifying only a subset
+of colunns to be part of the SQL SELECT statement due to the size of the entire ntee file (over 1.5g),
+cleans hyphens out of the EIN column, then passes the data into the ntee_create method.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.BMFShare.ntee_create">
+<code class="descname">ntee_create</code><span class="sig-paren">(</span><em>ntee</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#BMFShare.ntee_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.BMFShare.ntee_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is split from the main ntee method because this portion is used in the Core file creation but
+overridden in the BMF process.  It handles merging the ntee data into the main core files.</p>
+<p>ARGUMENTS
+ntee (DataFrame) : The nteedocAllEins data.</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="data.Data">
+<em class="property">class </em><code class="descclassname">data.</code><code class="descname">Data</code><span class="sig-paren">(</span><em>main</em>, <em>clear_old</em>, <em>get_from_sql</em>, <em>current_yr</em>, <em>backfill</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="load_data.html#load_data.LoadData" title="load_data.LoadData"><code class="xref py py-class docutils literal"><span class="pre">load_data.LoadData</span></code></a>, <a class="reference internal" href="#data.BMFShare" title="data.BMFShare"><code class="xref py py-class docutils literal"><span class="pre">data.BMFShare</span></code></a></p>
+<p>This class holds methods intended to handle the first data steps, including loading, merging, crosswalking, and
+dropping.  It does not handle the calculation of any new columns (Process), validation (Validate), or creation
+of final output (Write).  Note that there are a few exceptions to the column creation exclusion, where handling
+it here is far easier than later, e.g. setting the INPRIOR flag in the same place that prior year data is
+merged in.  For the sake of maintainability these exceptions should be fixed, and it has been added to
+the github issues list.</p>
+<p>Its methods are split into three classes, the last two of which are inherited by this one.  The BMFShare class
+holds Data methods that are needed for inheritance into both this class and the NCCS BMF creation process, and
+the LoadData class holds methods that specifically involve loading data from the internet, SQL or from file.</p>
+<dl class="method">
+<dt id="data.Data.apply_crosswalk">
+<code class="descname">apply_crosswalk</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.apply_crosswalk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.apply_crosswalk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Crosswalks the IRS data with the NCCS variable names.  The crosswalks are retrieved from the “settings/crosswalk” folder.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.backfill">
+<code class="descname">backfill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.backfill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.backfill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accesses the main dataset at the top level (from init_final()), then fills in missing EINs
+from one year previous.  Then repeats the step on the newly expanded data from two years
+previous, out to as many periods as are specified.</p>
+<p>The data for backfilling is retrieved from SQL (or from file if it is already downloaded).</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.check_columns">
+<code class="descname">check_columns</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.check_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.check_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the columns in the final ouput against the columns expected to be present in the final
+output.  Drops extra columns and logs any missing ones.</p>
+<p>The expected columns are retrieved from “settings/final variable list” folder.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.drop_missing">
+<code class="descname">drop_missing</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.drop_missing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.drop_missing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops “zero filers” when ALL of the values for a given EIN over the columns specified in the “drop if missing”
+folder are 0 or N.  The columns to consider are stored in the “settings/drop if missing” folder.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.drop_on_values">
+<code class="descname">drop_on_values</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.drop_on_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.drop_on_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for dropping only specific values of the data.  Currently only used to remove SUBSECCD != 92
+from the PF data.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.epostcard">
+<code class="descname">epostcard</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.epostcard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.epostcard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads the IRS epostcard (990N) data, then merges in the YEAR column on EIN for the Full and EZ files.
+Later, in the Process stage, this columns is checked against the FISYR column to turn it into a yes/no entry
+for whether a firm filed a 990N in the same year as an EZ or Full 990.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.init_final">
+<code class="descname">init_final</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.init_final"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.init_final" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method copies the final EZ, Full and PF data from the nccs.data level to the nccs base level,
+before it is combined and split into the CO, PC and PF files.</p>
+<p>Note that this step is mainly redundant after changes to backfilling and prior data handling, but it
+was nearly costless to leave in and quite a pain to remove.  The only relevant part is the adding of
+the validation tracking columns at the end, but that could easily be moved to the backfilling
+method.  Removing this method has been added to the github issues list.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.make_numeric">
+<code class="descname">make_numeric</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.make_numeric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.make_numeric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles converting the dtypes for columns that are used in mathematical operations later into floats, from the default strings.</p>
+<p>This method should be generalized, or, better yet, dtypes should be made explicit from the beginning.  This is raised as a
+github issue.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="data.Data.prior_year">
+<code class="descname">prior_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#Data.prior_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.Data.prior_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges selected prior year variables into current data, appending ‘P’ to the end OR changing ‘EOY’ to ‘BOY’
+(end of prior year value becomes beginning of current year value).</p>
+<p>It then tests that the FISYR for the prior year data (renamed FISYRP) is the year before the current
+FISYR (i.e. FISYRP = FISYR - 1), then nulls all the merged data where this is not true.  It uses this
+same criteria to fill in the INPIOR column with 1 where FISYRP = FISYR - 1 and 0 otherwise.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="data.check_folder">
+<code class="descclassname">data.</code><code class="descname">check_folder</code><span class="sig-paren">(</span><em>path</em>, <em>folder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#check_folder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.check_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the given path for the specified folder then returns the folder name.  If the folder does
+not exist at this path, the folder is created first.</p>
+<p>ARGUMENTS
+path (str) : Base path on local system
+folder (str) : Folder name to check for in the base path</p>
+<p>RETURNS
+str: Folder</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="data.clear_files">
+<code class="descclassname">data.</code><code class="descname">clear_files</code><span class="sig-paren">(</span><em>path</em>, <em>folder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data.html#clear_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#data.clear_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes all existing .csv files from the specified path.</p>
+<p>ARGUMENTS
+path (str) : Base path on local system
+folder (str) : Folder name to check for in the base path</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="build_nccs.html" title="previous chapter">build_nccs module</a></li>
+      <li>Next: <a href="load_data.html" title="next chapter">load_data module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/data.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,165 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>write module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="validation_fixer module" href="validation_fixer.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-write">
+<span id="write-module"></span><h1>write module<a class="headerlink" href="#module-write" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="write.Write">
+<em class="property">class </em><code class="descclassname">write.</code><code class="descname">Write</code><span class="sig-paren">(</span><em>main</em>, <em>output_full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/write.html#Write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#write.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="process.html#process.Deduplicate" title="process.Deduplicate"><code class="xref py py-class docutils literal"><span class="pre">process.Deduplicate</span></code></a></p>
+<p>This class handles writing the final dataframes out for release.  It can tell which files to create
+by which dataframes it currently knows, aside from the “_full990” files, which are set by flag at
+startup.</p>
+<p>Inherits the Deduplicate class from the process.py file; this is now an unnecessary inheritance because
+all deduplication happens here.  Originally deduplication happened in the process stage AND in the
+write stage.</p>
+<dl class="method">
+<dt id="write.Write.build_output">
+<code class="descname">build_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/write.html#Write.build_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#write.Write.build_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method goes through the dataframes that come out of the data and process classes, split along
+the initial axis of Full, EZ or PF, then splits and recombines them into the CO, PC and PF files.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="write.Write.handle_duplicates">
+<code class="descname">handle_duplicates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/write.html#Write.handle_duplicates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#write.Write.handle_duplicates" title="Permalink to this definition">¶</a></dt>
+<dd><p>The raw data, the data from backfilling, and the data from merging and splitting into CO/PC, may all
+result in non-unique EINs in the index.  The method loads the criteria to select the “best” instance
+of a given EIN from the process_co_pc and process_pf classes, then applies them to all the dataframes
+in memory.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="write.Write.to_file">
+<code class="descname">to_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/write.html#Write.to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#write.Write.to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the final releases to file, in the “final output” folder.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+NONE</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="validation_fixer.html" title="previous chapter">validation_fixer module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/write.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
