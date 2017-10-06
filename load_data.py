@@ -13,13 +13,15 @@ import pymysql
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class LoadData():
-    """This class is inherited by the Data class, and contains the methods related to retrieving data remotely.
+    """
+    This class is inherited by the Data class, and contains the methods related to retrieving data remotely.
     From the web, that includes the raw 990 IRS data, the raw epostcard (990N) IRS data, and the raw BMR IRS
     data.  From NCCS MySQL, it has the methods for nteedocAllEins, lu_fipsmsa, and all of the prior NCCS
     core file releases.
     """
     def get_urls(self):
-        """Base method for loading the URLs necessary for downloads into memory.
+        """
+        Base method for loading the URLs necessary for downloads into memory.
 
         Main core file URL: https://www.irs.gov/uac/soi-tax-stats-annual-extract-of-tax-exempt-organization-financial-data
 
@@ -42,7 +44,8 @@ class LoadData():
         self.urls = entries
 
     def form_urls(self, entries, path):
-        """Processes the text file in the "settings/urls" folder for EZ, Full and PF download paths.
+        """
+        Processes the text file in the "settings/urls" folder for EZ, Full and PF download paths.
 
         ARGUMENTS
         entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
@@ -68,7 +71,8 @@ class LoadData():
         return entries
 
     def epost_urls(self, entries, path):
-        """Processes the text file in the "settings/urls" folder for the epostcard (990N) download path.
+        """
+        Processes the text file in the "settings/urls" folder for the epostcard (990N) download path.
 
         ARGUMENTS
         entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
@@ -89,7 +93,8 @@ class LoadData():
         return entries
 
     def bmf_urls(self, entries, path):
-        """Processes the text file in the "settings/urls" folder for BMF download path.
+        """
+        Processes the text file in the "settings/urls" folder for BMF download path.
 
         ARGUMENTS
         entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
@@ -111,7 +116,8 @@ class LoadData():
         return entries
 
     def download(self):
-        """Base method for downloading the main core files from the IRS, setting the EIN as the index, and
+        """
+        Base method for downloading the main core files from the IRS, setting the EIN as the index, and
         updating the SOURCE column with the appropriate file name.
 
         ARGUMENTS
@@ -146,7 +152,8 @@ class LoadData():
         main.logger.info('Downloading complete.\n')
 
     def sql_auth(self):
-        """Handles logging into the NCCS MySQL server, including prompting for credentials.
+        """
+        Handles logging into the NCCS MySQL server, including prompting for credentials.
 
         ARGUMENTS
         None
@@ -176,7 +183,8 @@ class LoadData():
             self.sql_connection = None
 
     def close_sql(self):
-        """Cleanly shuts down the NCCS MySQL connection.
+        """
+        Cleanly shuts down the NCCS MySQL connection.
 
         ARGUMENTS
         None
@@ -189,7 +197,8 @@ class LoadData():
             self.sql_connection.close()
 
     def get_sql(self, fname, dbase, cols='*', index_col='EIN', match_dtypes=None, force_sql_cols=False):
-        """Method for downloading a file, passed as the "fname" argument, from the MySQL connection established
+        """
+        Method for downloading a file, passed as the "fname" argument, from the MySQL connection established
         in the sql_auth method.
 
         It will first check its own cache to see if it has already downloaded the file and is holding it in
@@ -202,17 +211,15 @@ class LoadData():
 
         ARGUMENTS
         cols (str or list): Default '*', used when only a subset of the data should be returned.
-
         index_col (str): Default 'EIN', specifies the column to use as the index.
-
         match_dtypes (DataFrame): Default None, if a dataframe is passed it will extract the schema from
-        it and apply it to the data specified in fname; otherwise it uses the MySQL defaults.
-
+                                  it and apply it to the data specified in fname; otherwise it uses the
+                                  MySQL defaults.
         force_sql_cols (bool): Default False, If True it will force the columns specified in the cols argument
-        to become a part of the SQL statement; otherwise it downloads * in the SELECT statement and then
-        subsets it later.  This is used, for example, in nteedocAllEINS because the full file is 1.5 gigabytes
-        but only 1/3rd of that is needed.
-
+                               to become a part of the SQL statement; otherwise it downloads * in the SELECT
+                               statement and then subsets it later.  This is used, for example, in
+                               nteedocAllEINS because the full file is 1.5 gigabytes but only 1/3rd of that is
+                               needed.
         RETURNS
         DataFrame
         """
@@ -290,11 +297,14 @@ class LoadData():
             return df.loc[:, [c.upper() for c in cols if c.upper() != 'EIN']]
 
     def download_epostcard(self, usecols=[0, 1], names=['EIN', 'EPOSTCARD'], date_col='EPOSTCARD'):
-        """Method for downloading the epostcard (990N) data from the IRS.
+        """
+        Method for downloading the epostcard (990N) data from the IRS.
 
         ARGUMENTS
-        usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as indexes.
-        names (list) : Default ['EIN', 'EPOSTCARD'], provides the header names.  Must be the same dimension as usecols.
+        usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as
+                         indexes.
+        names (list) : Default ['EIN', 'EPOSTCARD'], provides the header names.  Must be the same dimension
+                       as usecols.
         date_col (str) : Default 'EPOSTCARD', specifies the column to be converted to date dtype.
 
         RETURNS
@@ -315,7 +325,8 @@ class LoadData():
         return df
 
     def download_bmf(self):
-        """Accesses the stored URLs for the raw BMF files from the IRS, then passes the necessary information
+        """
+        Accesses the stored URLs for the raw BMF files from the IRS, then passes the necessary information
         into the download_file method.
 
         ARGUMENTS
@@ -334,14 +345,14 @@ class LoadData():
         return df
 
     def download_file(self, url, force=False):
-        """Method for downloading the specified URL, then unzipping it if necessary.  All newly-downloaded
+        """
+        Method for downloading the specified URL, then unzipping it if necessary.  All newly-downloaded
         files are set to read-only.
 
         ARGUMENTS
         url (str) : Any valid URL
-
         force (bool) : Default False, when True it will ignore existing files in the "downloads/IRS" folder,
-        when False it will only download a new version if the file does not already exist.
+                       when False it will only download a new version if the file does not already exist.
 
         RETURNS
         str : Location on local file system of the downloaded (or pre-existing) file.

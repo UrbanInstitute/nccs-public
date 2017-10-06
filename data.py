@@ -12,7 +12,8 @@ from load_data import *
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 def check_folder(path, folder):
-    """Checks the given path for the specified folder then returns the folder name.  If the folder does
+    """
+    Checks the given path for the specified folder then returns the folder name.  If the folder does
     not exist at this path, the folder is created first.
 
     ARGUMENTS
@@ -29,7 +30,8 @@ def check_folder(path, folder):
     return folder
 
 def clear_files(path, folder):
-    """Removes all existing .csv files from the specified path.
+    """
+    Removes all existing .csv files from the specified path.
 
     ARGUMENTS
     path (str) : Base path on local system
@@ -44,11 +46,13 @@ def clear_files(path, folder):
         os.remove(os.path.join(path, folder, f))
 
 class BMFShare():
-    """This class holds methods that are used by both the NCCS core file process, and the NCCS BMF process.
+    """
+    This class holds methods that are used by both the NCCS core file process, and the NCCS BMF process.
     They are separated from the Data class solely for the purposes of inheritance.
     """
     def bmf(self):
-        """Downloads the raw BMF data from the IRS, rearranges a few columns (splitting, combining, cleaning),
+        """
+        Downloads the raw BMF data from the IRS, rearranges a few columns (splitting, combining, cleaning),
         then passes the data and lists of the columns to the bmf_create method.
 
         ARGUMENTS
@@ -85,7 +89,8 @@ class BMFShare():
         self.bmf_create(bmf, bmf_cols)
 
     def bmf_create(self, bmf, bmf_cols):
-        """This is split from the main bmf method because this portion is used in the Core file creation but
+        """
+        This is split from the main bmf method because this portion is used in the Core file creation but
         overridden in the BMF process.  It subsets the BMF data by the column lists it receives from the bmf
         method, then merges it into the main core file data by EIN.
 
@@ -113,7 +118,8 @@ class BMFShare():
         main.logger.info('Finished merging BMF data with all forms.\n')
 
     def fipsmsa(self):
-        """Load the lu_fipsmsa data from SQL (or from file if it is already downloaded), then passes the data
+        """
+        Load the lu_fipsmsa data from SQL (or from file if it is already downloaded), then passes the data
         into the fipsmsa_create method for merging.  Must be run after the NTEE data is merged in, because
         that's where the FIPS column comes from that this method merges on.
 
@@ -135,7 +141,8 @@ class BMFShare():
         self.fipsmsa_create(fipsmsa, cols)
 
     def fipsmsa_create(self, fipsmsa, fipsmsa_cols):
-        """This is split from the main fipsmsa method because this portion is used in the Core file creation but
+        """
+        This is split from the main fipsmsa method because this portion is used in the Core file creation but
         overridden in the BMF process.  It handles merging the fipsmsa data into the main core file data,
         by the FIPS column.
 
@@ -154,7 +161,8 @@ class BMFShare():
         main.logger.info('Completed merging in FIPSMSA documention.\n')
 
     def ntee(self):
-        """Load the nteedocAllEins data from SQL (or file if it's already downloaded), specifying only a subset
+        """
+        Load the nteedocAllEins data from SQL (or file if it's already downloaded), specifying only a subset
         of colunns to be part of the SQL SELECT statement due to the size of the entire ntee file (over 1.5g),
         cleans hyphens out of the EIN column, then passes the data into the ntee_create method.
 
@@ -183,7 +191,8 @@ class BMFShare():
         self.ntee_create(ntee)
 
     def ntee_create(self, ntee):
-        """This is split from the main ntee method because this portion is used in the Core file creation but
+        """
+        This is split from the main ntee method because this portion is used in the Core file creation but
         overridden in the BMF process.  It handles merging the ntee data into the main core files.
 
         ARGUMENTS
@@ -201,7 +210,8 @@ class BMFShare():
         main.logger.info('Completed merging in master NTEE documention.\n')
 
 class Data(LoadData, BMFShare):
-    """This class holds methods intended to handle the first data steps, including loading, merging, crosswalking, and
+    """
+    This class holds methods intended to handle the first data steps, including loading, merging, crosswalking, and
     dropping.  It does not handle the calculation of any new columns (Process), validation (Validate), or creation
     of final output (Write).  Note that there are a few exceptions to the column creation exclusion, where handling
     it here is far easier than later, e.g. setting the INPRIOR flag in the same place that prior year data is
@@ -261,7 +271,8 @@ class Data(LoadData, BMFShare):
             'TOTREVP', 'EXPSP', 'ASS_BOY']
 
     def apply_crosswalk(self):
-        """Crosswalks the IRS data with the NCCS variable names.  The crosswalks are retrieved from the "settings/crosswalk" folder.
+        """
+        Crosswalks the IRS data with the NCCS variable names.  The crosswalks are retrieved from the "settings/crosswalk" folder.
 
         ARGUMENTS
         None
@@ -316,7 +327,8 @@ class Data(LoadData, BMFShare):
         main.logger.info('All crosswalks applied.\n')
 
     def drop_missing(self):
-        """Drops "zero filers" when ALL of the values for a given EIN over the columns specified in the "drop if missing"
+        """
+        Drops "zero filers" when ALL of the values for a given EIN over the columns specified in the "drop if missing"
         folder are 0 or N.  The columns to consider are stored in the "settings/drop if missing" folder.
 
         ARGUMENTS
@@ -356,7 +368,8 @@ class Data(LoadData, BMFShare):
         main.logger.info('Observations missing all values from "drop if missing" dropped.\n')
 
     def drop_on_values(self):
-        """Method for dropping only specific values of the data.  Currently only used to remove SUBSECCD != 92
+        """
+        Method for dropping only specific values of the data.  Currently only used to remove SUBSECCD != 92
         from the PF data.
 
         ARGUMENTS
@@ -379,7 +392,8 @@ class Data(LoadData, BMFShare):
             data_dict[form] = df
 
     def backfill(self):
-        """Accesses the main dataset at the top level (from init_final()), then fills in missing EINs
+        """
+        Accesses the main dataset at the top level (from init_final()), then fills in missing EINs
         from one year previous.  Then repeats the step on the newly expanded data from two years
         previous, out to as many periods as are specified.
 
@@ -437,7 +451,8 @@ class Data(LoadData, BMFShare):
         main.logger.info('All missing EINs backfilled from previous releases.\n')
 
     def init_final(self):
-        """This method copies the final EZ, Full and PF data from the nccs.data level to the nccs base level,
+        """
+        This method copies the final EZ, Full and PF data from the nccs.data level to the nccs base level,
         before it is combined and split into the CO, PC and PF files.
 
         Note that this step is mainly redundant after changes to backfilling and prior data handling, but it
@@ -466,7 +481,8 @@ class Data(LoadData, BMFShare):
             main.data_dict[form][main.validate.manual_fix_column_name] = ''
 
     def epostcard(self):
-        """Downloads the IRS epostcard (990N) data, then merges in the YEAR column on EIN for the Full and EZ files.
+        """
+        Downloads the IRS epostcard (990N) data, then merges in the YEAR column on EIN for the Full and EZ files.
         Later, in the Process stage, this columns is checked against the FISYR column to turn it into a yes/no entry
         for whether a firm filed a 990N in the same year as an EZ or Full 990.
 
@@ -490,7 +506,8 @@ class Data(LoadData, BMFShare):
             main.logger.info('Finished merging EPOSTCARD data for 990n indicator.\n')
 
     def prior_year(self):
-        """Merges selected prior year variables into current data, appending 'P' to the end OR changing 'EOY' to 'BOY'
+        """
+        Merges selected prior year variables into current data, appending 'P' to the end OR changing 'EOY' to 'BOY'
         (end of prior year value becomes beginning of current year value).
 
         It then tests that the FISYR for the prior year data (renamed FISYRP) is the year before the current
@@ -562,7 +579,8 @@ class Data(LoadData, BMFShare):
             main.logger.info('All past data loaded.\n')
 
     def check_columns(self):
-        """Checks the columns in the final ouput against the columns expected to be present in the final
+        """
+        Checks the columns in the final ouput against the columns expected to be present in the final
         output.  Drops extra columns and logs any missing ones.
 
         The expected columns are retrieved from "settings/final variable list" folder.
@@ -611,7 +629,8 @@ class Data(LoadData, BMFShare):
         main.logger.info('Finished validating columns.  See the dicts at nccs.data.dropped_columns and nccs.data.missing_columns for details.\n')
 
     def make_numeric(self):
-        """Handles converting the dtypes for columns that are used in mathematical operations later into floats, from the default strings.
+        """
+        Handles converting the dtypes for columns that are used in mathematical operations later into floats, from the default strings.
 
         This method should be generalized, or, better yet, dtypes should be made explicit from the beginning.  This is raised as a
         github issue.

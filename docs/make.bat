@@ -54,7 +54,7 @@ if "%1" == "clean" (
 
 REM Check if sphinx-build is available
 %SPHINXBUILD% 1>NUL 2>NUL
-if errorlevel 3 (
+if errorlevel 1 (
 	echo.
 	echo.The Sphinx module was not found. Make sure you have Sphinx installed,
 	echo.then set the SPHINXBUILD environment variable to point to the full

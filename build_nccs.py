@@ -10,7 +10,8 @@ import datetime
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class BuildNCCS():
-    """This is the top-level class.  It initializes the other classes of the program and holds the methods
+    """
+    This is the top-level class.  It initializes the other classes of the program and holds the methods
     related to logging.
     """
     def __init__(self, path, current_yr=None, force_new_download=False, forms=['PF', 'EZ', 'Full'], backfill=2, tolerance=1000, do_validation=True, clear_old=True, partial_validation=True, get_from_sql=True, output_full=True):
@@ -28,7 +29,8 @@ class BuildNCCS():
         self.write    = write.Write(self, output_full)
 
     def start_logging(self, path, current_yr):
-        """Initializes the logging stream to a log_YYYY.txt file and to stdout.
+        """
+        Initializes the logging stream to a log_YYYY.txt file and to stdout.
         """
         formatter = logging.Formatter('[%(funcName)s]: %(message)s')
         logger = logging.getLogger('logger')
@@ -48,7 +50,8 @@ class BuildNCCS():
         return logger, start
 
     def end_logging(self):
-        """Cleanly ends the logging process.
+        """
+        Cleanly ends the logging process.
         """
         start = self.start
         logger = self.logger
@@ -57,7 +60,8 @@ class BuildNCCS():
         logging.shutdown()
 
     def end(self):
-        """Calls the end_logging() method, then checks to see if the program was run from an interactive prompt
+        """
+        Calls the end_logging() method, then checks to see if the program was run from an interactive prompt
         (i.e. within Python and not from a command line).  If yes, it prints to stdout a summary of useful
         debugging info maintained within the nccs class instance.
         """

@@ -12,7 +12,8 @@ import pandas as pd
 # Code by Jeff Levy (jlevy@urban.org), 2016-2017
 
 class Validate(ValidateEZ, ValidateFull, ValidatePF):
-    """Base class for validating the data, including testing observations and flagging errors, as well as
+    """
+    Base class for validating the data, including testing observations and flagging errors, as well as
     outputting particularly large firms for additional scrutiny.  Also then re-integrates that same
     data when it finds it in the "fixed validation" folder.
     """
@@ -50,7 +51,8 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
         self.fixes_applied = {'CO':0, 'PC':0, 'PF':0}
 
     def to_file(self):
-        """Method for writing EINs flagged for validation out to the "validation failures" folder.
+        """
+        Method for writing EINs flagged for validation out to the "validation failures" folder.
 
         ARGUMENTS
         None
@@ -85,7 +87,8 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
             sys.exit()
 
     def validate_columns(self):
-        """Base method for entering the process to validation calucations.  Begins by integrating any fixes found
+        """
+        Base method for entering the process to validation calucations.  Begins by integrating any fixes found
         in the validation fixes folder, then calls the validation methods for each form.
 
         ARGUMENTS
@@ -144,7 +147,8 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
             main.logger.info('Validation skipped due to do_validate=False argument in main.py.\n')
 
     def extract(self, qtile=.999, pchan=.5, cutoff=10000000):
-        """Base method for extracting the largest and most-changed firms for additional validation.
+        """
+        Base method for extracting the largest and most-changed firms for additional validation.
 
         ARGUMENTS
         qtile (float) : Quartile cutoff to define the "largest" firms
@@ -198,7 +202,8 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
         main.logger.info('Finished extracting additional validation data.\n')
 
     def validate(self, df, failed_validation, col_name, form, sub_form):
-        """Method used on a per-column basis to see if there are any validation failures.  This is called from
+        """
+        Method used on a per-column basis to see if there are any validation failures.  This is called from
         within each of the form-specific validation classes (e.g. validate_full.py) after the calculation
         has been done.
 
@@ -234,13 +239,15 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
         return df, failed_validation
 
     def validate_form(self, df, form, failed_validation):
-        """Summarizes the validation status of a given form, once all columns have been analyzed.  It then handles
+        """
+        Summarizes the validation status of a given form, once all columns have been analyzed.  It then handles
         logging, and setting up the validation output for the to_file method.
 
         ARGUMENTS
         df (DataFrame) : The form being summarized
         form (str) : Name of the form
-        failed_validation (bool) : The flag from the validate method indicating whether there were any failures for this form
+        failed_validation (bool) : The flag from the validate method indicating whether there were any
+                                   failures for this form
 
         RETURNS
         None
@@ -268,7 +275,8 @@ class Validate(ValidateEZ, ValidateFull, ValidatePF):
         main.logger.info(log_str)
 
     def integrate_fixes(self):
-        """Method for handling the incorporation of fixed validation errors back into the data.  If the
+        """
+        Method for handling the incorporation of fixed validation errors back into the data.  If the
         validation fixer has been used to generate fixes, they will automatically be in the right place
         and in the right configuration for this method to find and use.
 

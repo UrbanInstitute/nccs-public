@@ -11,10 +11,12 @@ def pf_dup_criteria(dups):
     return dups, ['FISYR', 'val', 'STYEAR', 'rnd']
 
 class ProcessPF():
-    """The methods used to process the PF data.  Everything here is inhereted by the main "process" class.
+    """
+    The methods used to process the PF data.  Everything here is inhereted by the main "process" class.
     """
     def pf_calculate(self):
-        """Base method for calling all of the methods to calculate the columns for the 990 PF form.
+        """
+        Base method for calling all of the methods to calculate the columns for the 990 PF form.
 
         ARGUMENTS
         None
@@ -33,7 +35,8 @@ class ProcessPF():
         pf['FILENAME'] = self.pf_filename(pf)
 
     def pf_tfld(self, pf):
-        """Calculates the TFLD column.
+        """
+        Calculates the TFLD column.
 
         ARGUMENTS
         pf (DataFrame) : Core file dataframe
@@ -44,7 +47,8 @@ class ProcessPF():
         return pf['TAXDUE'] - pf['OVERPAY']
 
     def pf_p1ngasts(self, pf):
-        """Calculates the P1NGASTS column.
+        """
+        Calculates the P1NGASTS column.
 
         ARGUMENTS
         pf (DataFrame) : Core file dataframe
@@ -57,7 +61,8 @@ class ProcessPF():
         return pf['TOTEXCAPLS'] + pf['TOTEXCAPGN']
 
     def pf_p6txrfd(self, pf):
-        """Calculates the P6TXRFD column.
+        """
+        Calculates the P6TXRFD column.
 
         ARGUMENTS
         pf (DataFrame) : Core file dataframe
@@ -69,7 +74,8 @@ class ProcessPF():
                           pf['P6TEXCTX']+pf['P6TXPNLT'], 0)
 
     def pf_balduopt(self, pf):
-        """Calculates the BALDUOPT column.  This column was used in 2012 and earlier, but is now unused.
+        """
+        Calculates the BALDUOPT column.  This column was used in 2012 and earlier, but is now unused.
 
         ARGUMENTS
         pf (DataFrame) : Core file dataframe
@@ -96,7 +102,8 @@ class ProcessPF():
             return pf['BALDUOPT'].fillna(balduopt_fill)
 
     def pf_filename(self, pf):
-        """Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to
+        """
+        Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to
         the PDF of the 990 filing on the Foundation Center's website.  The full construction is:
 
         http://990s.foundationcenter.org/990_pdf_archive/<FIRST THREE DIGITS OF EIN>/<FULL EIN>/<FILENAME>.pdf
@@ -116,7 +123,8 @@ class ProcessPF():
         return pf.index + '_' + pf['TAXPER'] + '_990PF'
 
     def pf_manual(self):
-        """Applies any manual, one-time fixes to the PF data.  This is usually defined as a change to a single
+        """
+        Applies any manual, one-time fixes to the PF data.  This is usually defined as a change to a single
         EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.
 
         ARGUMENTS
