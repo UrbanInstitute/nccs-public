@@ -21,3 +21,5 @@ It produces the following files:
   - NCCS Core PF file 								  (if the 990PF is used)
   - NCCS Core CO_full file 						      (if the 990 Full is used)
   - NCCS Core PC_full file 						      (if the 990 Full is used)
+  
+For documentation of the build process, see our [readthedocs site](https://nccs-public.readthedocs.io/en/latest/index.html).  For the release data, see the [NCCS data archive](http://nccs-data.urban.org/data.php?ds=core).
