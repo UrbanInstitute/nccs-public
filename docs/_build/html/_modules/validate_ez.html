@@ -1,0 +1,225 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>validate_ez &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for validate_ez</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="ValidateEZ"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ">[docs]</a><span class="k">class</span> <span class="nc">ValidateEZ</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Methods for validating EINs from IRS form 990 Full.</span>
+
+<span class="sd">    Each method called by validate_ez represents the validation of one column, and comes with the kwarg</span>
+<span class="sd">    fixer_display=False, which when set to True will return only a string representation of the equation.</span>
+<span class="sd">    This is for use in the validation fixer tool.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ValidateEZ.validate_ez"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.validate_ez">[docs]</a>    <span class="k">def</span> <span class="nf">validate_ez</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for validating certain columns for EINs from IRS form 990 EZ.  Note that there&#39;s are</span>
+<span class="sd">        some steps leadin to this that seem redundant/odd, but actually had to follow that order.</span>
+
+<span class="sd">        The Full and EZ forms require different validations, because the components of each form are different.</span>
+<span class="sd">        However, they need to be combined and then split again to create the CO and PC releases, and that needs</span>
+<span class="sd">        to happen before validation because info from the prior NCCS releases are used in the validation steps</span>
+<span class="sd">        (and the prior releases are CO/PC, not Full/EZ).</span>
+
+<span class="sd">        That means we start with EZ/Full, combine and split into CO/PC, merge in prior releases, then run this</span>
+<span class="sd">        validate_full method wherein we split each of the CO/PC files into its Full/EZ components to pick the</span>
+<span class="sd">        correct validation equations, then recombine the results into the validation of form CO or PC.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">sub_form</span> <span class="o">=</span> <span class="s1">&#39;EZ&#39;</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CO&#39;</span><span class="p">,</span> <span class="s1">&#39;PC&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_validation</span><span class="p">[</span><span class="n">form</span><span class="p">]:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+                <span class="n">ezonly</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;EZ&#39;</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;ez&#39;</span><span class="p">))]</span>
+
+                <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validation_tracking</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_saleothn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_saleothn</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_saleothn&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_netincfndrsng&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_netincfndrsng</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_netincfndrsng&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_grprof&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_grprof</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_grprof&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_totrev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_totrev</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_totrev&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_netinc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_netinc</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_netinc&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;validate_ez_ass_eoy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_validate_ass_eoy</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ezonly</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+                <span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ez_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_ez_ass_eoy&#39;</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">sub_form</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">validation_tracking</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">ez_failed_validation</span></div>
+        <span class="c1">#self.validate_form(ez, &#39;EZ&#39;, ez_failed_validation)</span>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_saleothn"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_saleothn">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_saleothn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;SALEOTHN - (SALEOTHG - SALEOTHE)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHN&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHG&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHE&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_netincfndrsng"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_netincfndrsng">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_netincfndrsng</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;NETINCFNDRSNG - (GRSINCGAMING + GRSINCFNDRSNG - DIREXP)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;NETINCFNDRSNG&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCGAMING&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCFNDRSNG&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DIREXP&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_grprof"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_grprof">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_grprof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;GRPROF - (INVENTG - GOODS)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRPROF&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;INVENTG&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GOODS&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_totrev"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_totrev">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_totrev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;TOTREV - (CONT + PRGMSERVREV + DUESASSESMNTS + INVINC + SALEOTHN + NETINCFNDRSNG + GRPROF + OTHINC)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;CONT&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;PRGMSERVREV&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DUESASSESMNTS&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;INVINC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHN&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;NETINCFNDRSNG&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRPROF&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;OTHINC&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_netinc"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_netinc">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_netinc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;NETINC - (TOTREV - EXPS)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;NETINC&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;EXPS&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidateEZ.ez_validate_ass_eoy"><a class="viewcode-back" href="../validate_ez.html#validate_ez.ValidateEZ.ez_validate_ass_eoy">[docs]</a>    <span class="k">def</span> <span class="nf">ez_validate_ass_eoy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;ASS_EOY - (LIAB_EOY + FUNDBAL)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;ASS_EOY&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;LIAB_EOY&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;FUNDBAL&#39;</span><span class="p">])</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

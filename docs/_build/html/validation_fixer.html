@@ -1,0 +1,338 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>validation_fixer module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="write module" href="write.html" />
+    <link rel="prev" title="validate_pf module" href="validate_pf.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-validation_fixer">
+<span id="validation-fixer-module"></span><h1>validation_fixer module<a class="headerlink" href="#module-validation_fixer" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="validation_fixer.CoreFixer">
+<em class="property">class </em><code class="descclassname">validation_fixer.</code><code class="descname">CoreFixer</code><a class="reference internal" href="_modules/validation_fixer.html#CoreFixer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.CoreFixer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#validation_fixer.Utilities" title="validation_fixer.Utilities"><code class="xref py py-class docutils literal"><span class="pre">validation_fixer.Utilities</span></code></a>, <a class="reference internal" href="#validation_fixer.Display" title="validation_fixer.Display"><code class="xref py py-class docutils literal"><span class="pre">validation_fixer.Display</span></code></a>, <a class="reference internal" href="#validation_fixer.UserInput" title="validation_fixer.UserInput"><code class="xref py py-class docutils literal"><span class="pre">validation_fixer.UserInput</span></code></a></p>
+<dl class="method">
+<dt id="validation_fixer.CoreFixer.dataframe_loop">
+<code class="descname">dataframe_loop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#CoreFixer.dataframe_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.CoreFixer.dataframe_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterates through each row in the dataframe</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.CoreFixer.end">
+<code class="descname">end</code><span class="sig-paren">(</span><em>changes_only=False</em>, <em>save_only=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#CoreFixer.end"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.CoreFixer.end" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.CoreFixer.row_loop">
+<code class="descname">row_loop</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#CoreFixer.row_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.CoreFixer.row_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Continues to loop the same row through the display until it receives an exit condition</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.CoreFixer.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#CoreFixer.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.CoreFixer.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main process called on the class instance to begin the validator</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="validation_fixer.Display">
+<em class="property">class </em><code class="descclassname">validation_fixer.</code><code class="descname">Display</code><a class="reference internal" href="_modules/validation_fixer.html#Display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="validation_fixer.Display.display">
+<code class="descname">display</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.display" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Display.display_ein_header">
+<code class="descname">display_ein_header</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.display_ein_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.display_ein_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Display.display_failed_equations">
+<code class="descname">display_failed_equations</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.display_failed_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.display_failed_equations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Display.display_form_header">
+<code class="descname">display_form_header</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.display_form_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.display_form_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Display.display_static_header">
+<code class="descname">display_static_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.display_static_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.display_static_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Display.failure_entries">
+<code class="descname">failure_entries</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Display.failure_entries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Display.failure_entries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="validation_fixer.UserInput">
+<em class="property">class </em><code class="descclassname">validation_fixer.</code><code class="descname">UserInput</code><a class="reference internal" href="_modules/validation_fixer.html#UserInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="validation_fixer.UserInput.col_viewer">
+<code class="descname">col_viewer</code><span class="sig-paren">(</span><em>row</em>, <em>choice</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.col_viewer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.col_viewer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.get_explanation">
+<code class="descname">get_explanation</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.get_explanation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.get_explanation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.get_user">
+<code class="descname">get_user</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.get_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.get_user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_checked">
+<code class="descname">ui_checked</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_checked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_checked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_done_so_far">
+<code class="descname">ui_done_so_far</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_done_so_far"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_done_so_far" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_fixed">
+<code class="descname">ui_fixed</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_fixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_fixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_get_fix">
+<code class="descname">ui_get_fix</code><span class="sig-paren">(</span><em>prev_val</em>, <em>col</em>, <em>current_val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_get_fix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_get_fix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_ignore">
+<code class="descname">ui_ignore</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_ignore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_ignore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_modify_row">
+<code class="descname">ui_modify_row</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_modify_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_modify_row" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_options">
+<code class="descname">ui_options</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_quit">
+<code class="descname">ui_quit</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_quit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_quit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_reset">
+<code class="descname">ui_reset</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_skip">
+<code class="descname">ui_skip</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_skip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_skip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_view">
+<code class="descname">ui_view</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_view" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.ui_view_group">
+<code class="descname">ui_view_group</code><span class="sig-paren">(</span><em>token</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.ui_view_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.ui_view_group" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.UserInput.user_input">
+<code class="descname">user_input</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#UserInput.user_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.UserInput.user_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="validation_fixer.Utilities">
+<em class="property">class </em><code class="descclassname">validation_fixer.</code><code class="descname">Utilities</code><a class="reference internal" href="_modules/validation_fixer.html#Utilities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="validation_fixer.Utilities.build_url">
+<code class="descname">build_url</code><span class="sig-paren">(</span><em>filename</em>, <em>taxperp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.build_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.build_url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.generate_token">
+<code class="descname">generate_token</code><span class="sig-paren">(</span><em>ein</em>, <em>row</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.generate_token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.generate_token" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.get_components">
+<code class="descname">get_components</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.get_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.get_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the methods for validation calculations from Core, then builds the cross references
+needed to track relations between equations (e.g. one equation that fails has TOTREV2 in it,
+so the program finds all equations with TOTREV2 and displays those also)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.get_form_crosswalk">
+<code class="descname">get_form_crosswalk</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.get_form_crosswalk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.get_form_crosswalk" title="Permalink to this definition">¶</a></dt>
+<dd><p>For connecting column names to 990 form locations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.load_data">
+<code class="descname">load_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.load_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.load_saved">
+<code class="descname">load_saved</code><span class="sig-paren">(</span><em>form</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.load_saved"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.load_saved" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.pdf_opener">
+<code class="descname">pdf_opener</code><span class="sig-paren">(</span><em>filename</em>, <em>taxperp=None</em>, <em>url=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.pdf_opener"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.pdf_opener" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.process_token_storage">
+<code class="descname">process_token_storage</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.process_token_storage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.process_token_storage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for when the user has gone back to the previous token and then finished it and needs to restore the delayed one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.sort_data">
+<code class="descname">sort_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.sort_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.sort_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validation_fixer.Utilities.update_df_row">
+<code class="descname">update_df_row</code><span class="sig-paren">(</span><em>token</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#Utilities.update_df_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.Utilities.update_df_row" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="validation_fixer.wprint">
+<code class="descclassname">validation_fixer.</code><code class="descname">wprint</code><span class="sig-paren">(</span><em>text</em>, <em>chars=99</em>, <em>indent=True</em>, <em>ident=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validation_fixer.html#wprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validation_fixer.wprint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="validate_pf.html" title="previous chapter">validate_pf module</a></li>
+      <li>Next: <a href="write.html" title="next chapter">write module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/validation_fixer.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

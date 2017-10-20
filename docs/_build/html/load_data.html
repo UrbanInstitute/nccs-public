@@ -1,0 +1,277 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>load_data module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="main module" href="main.html" />
+    <link rel="prev" title="data module" href="data.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-load_data">
+<span id="load-data-module"></span><h1>load_data module<a class="headerlink" href="#module-load_data" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="load_data.LoadData">
+<em class="property">class </em><code class="descclassname">load_data.</code><code class="descname">LoadData</code><a class="reference internal" href="_modules/load_data.html#LoadData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This class is inherited by the Data class, and contains the methods related to retrieving data remotely.
+From the web, that includes the raw 990 IRS data, the raw epostcard (990N) IRS data, and the raw BMR IRS
+data.  From NCCS MySQL, it has the methods for nteedocAllEins, lu_fipsmsa, and all of the prior NCCS
+core file releases.</p>
+<dl class="method">
+<dt id="load_data.LoadData.bmf_urls">
+<code class="descname">bmf_urls</code><span class="sig-paren">(</span><em>entries</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.bmf_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.bmf_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes the text file in the “settings/urls” folder for BMF download path.</p>
+<p>ARGUMENTS
+entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
+path (str) : The base path on the local system</p>
+<p>RETURNS
+entries (dict) : Updated with the BMF URLs as an entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.close_sql">
+<code class="descname">close_sql</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.close_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.close_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleanly shuts down the NCCS MySQL connection.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.download">
+<code class="descname">download</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for downloading the main core files from the IRS, setting the EIN as the index, and
+updating the SOURCE column with the appropriate file name.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.download_bmf">
+<code class="descname">download_bmf</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.download_bmf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.download_bmf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accesses the stored URLs for the raw BMF files from the IRS, then passes the necessary information
+into the download_file method.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.download_epostcard">
+<code class="descname">download_epostcard</code><span class="sig-paren">(</span><em>usecols=[0, 1], names=['EIN', 'EPOSTCARD'], date_col='EPOSTCARD'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.download_epostcard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.download_epostcard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for downloading the epostcard (990N) data from the IRS.</p>
+<p>ARGUMENTS
+usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as</p>
+<blockquote>
+<div>indexes.</div></blockquote>
+<dl class="docutils">
+<dt>names (list) <span class="classifier-delimiter">:</span> <span class="classifier">Default [‘EIN’, ‘EPOSTCARD’], provides the header names.  Must be the same dimension</span></dt>
+<dd>as usecols.</dd>
+</dl>
+<p>date_col (str) : Default ‘EPOSTCARD’, specifies the column to be converted to date dtype.</p>
+<p>RETURNS
+DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.download_file">
+<code class="descname">download_file</code><span class="sig-paren">(</span><em>url</em>, <em>force=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.download_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.download_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for downloading the specified URL, then unzipping it if necessary.  All newly-downloaded
+files are set to read-only.</p>
+<p>ARGUMENTS
+url (str) : Any valid URL
+force (bool) : Default False, when True it will ignore existing files in the “downloads/IRS” folder,</p>
+<blockquote>
+<div>when False it will only download a new version if the file does not already exist.</div></blockquote>
+<p>RETURNS
+str : Location on local file system of the downloaded (or pre-existing) file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.epost_urls">
+<code class="descname">epost_urls</code><span class="sig-paren">(</span><em>entries</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.epost_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.epost_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes the text file in the “settings/urls” folder for the epostcard (990N) download path.</p>
+<p>ARGUMENTS
+entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
+path (str) : The base path on the local system</p>
+<p>RETURNS
+entries (dict) : Updated with the epostcard URLs as an entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.form_urls">
+<code class="descname">form_urls</code><span class="sig-paren">(</span><em>entries</em>, <em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.form_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.form_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes the text file in the “settings/urls” folder for EZ, Full and PF download paths.</p>
+<p>ARGUMENTS
+entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs
+path (str) : The base path on the local system</p>
+<p>RETURNS
+entries (dict) : Updated with the core file URLs as an entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.get_sql">
+<code class="descname">get_sql</code><span class="sig-paren">(</span><em>fname</em>, <em>dbase</em>, <em>cols='*'</em>, <em>index_col='EIN'</em>, <em>match_dtypes=None</em>, <em>force_sql_cols=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.get_sql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.get_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for downloading a file, passed as the “fname” argument, from the MySQL connection established
+in the sql_auth method.</p>
+<p>It will first check its own cache to see if it has already downloaded the file and is holding it in
+memory, then it will look in the “downloads/nccs” folder to see if that exact fname has already been
+downloaded.  Only if both of those are false will it connect to MySQL to retrieve the file.</p>
+<p>For users off the Urban campus or without a login to the NCCS MySQL server, having all the necessary
+files as .csv documents in the “downloads/nccs” folder means the program can still build.  See
+“folder instructions.txt” in that folder for more details.</p>
+<p>ARGUMENTS
+cols (str or list): Default ‘*’, used when only a subset of the data should be returned.
+index_col (str): Default ‘EIN’, specifies the column to use as the index.
+match_dtypes (DataFrame): Default None, if a dataframe is passed it will extract the schema from</p>
+<blockquote>
+<div>it and apply it to the data specified in fname; otherwise it uses the
+MySQL defaults.</div></blockquote>
+<dl class="docutils">
+<dt>force_sql_cols (bool): Default False, If True it will force the columns specified in the cols argument</dt>
+<dd>to become a part of the SQL statement; otherwise it downloads * in the SELECT
+statement and then subsets it later.  This is used, for example, in
+nteedocAllEINS because the full file is 1.5 gigabytes but only 1/3rd of that is
+needed.</dd>
+</dl>
+<p>RETURNS
+DataFrame</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.get_urls">
+<code class="descname">get_urls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.get_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.get_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for loading the URLs necessary for downloads into memory.</p>
+<p>Main core file URL: <a class="reference external" href="https://www.irs.gov/uac/soi-tax-stats-annual-extract-of-tax-exempt-organization-financial-data">https://www.irs.gov/uac/soi-tax-stats-annual-extract-of-tax-exempt-organization-financial-data</a></p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="load_data.LoadData.sql_auth">
+<code class="descname">sql_auth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/load_data.html#LoadData.sql_auth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#load_data.LoadData.sql_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles logging into the NCCS MySQL server, including prompting for credentials.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="data.html" title="previous chapter">data module</a></li>
+      <li>Next: <a href="main.html" title="next chapter">main module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/load_data.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

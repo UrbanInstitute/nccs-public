@@ -1,0 +1,248 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>process_full module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="process_pf module" href="process_pf.html" />
+    <link rel="prev" title="process_ez module" href="process_ez.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-process_full">
+<span id="process-full-module"></span><h1>process_full module<a class="headerlink" href="#module-process_full" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="process_full.ProcessFull">
+<em class="property">class </em><code class="descclassname">process_full.</code><code class="descname">ProcessFull</code><a class="reference internal" href="_modules/process_full.html#ProcessFull"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="process_co_pc.html#process_co_pc.ProcessCOPC" title="process_co_pc.ProcessCOPC"><code class="xref py py-class docutils literal"><span class="pre">process_co_pc.ProcessCOPC</span></code></a></p>
+<p>Creates columns found only in the Full dataframe.</p>
+<dl class="method">
+<dt id="process_full.ProcessFull.full_calculate">
+<code class="descname">full_calculate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_calculate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_calculate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for calling all of the methods to calculate the columns for the Full 990 form.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_direxp">
+<code class="descname">full_direxp</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_direxp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_direxp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the DIREXP column.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_filename">
+<code class="descname">full_filename</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to
+the PDF of the 990 filing on the Foundation Center’s website.  The full construction is:</p>
+<p><a class="reference external" href="http://990s.foundationcenter.org/990_pdf_archive">http://990s.foundationcenter.org/990_pdf_archive</a>/&lt;FIRST THREE DIGITS OF EIN&gt;/&lt;FULL EIN&gt;/&lt;FILENAME&gt;.pdf</p>
+<p>for 990 Full or EZ filings, or</p>
+<p><a class="reference external" href="http://990s.foundationcenter.org/990pf_pdf_archive">http://990s.foundationcenter.org/990pf_pdf_archive</a>/&lt;FIRST THREE DIGITS OF EIN&gt;/&lt;FULL EIN&gt;/&lt;FILENAME&gt;.pdf</p>
+<p>for 990 PF filings.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_fundinc">
+<code class="descname">full_fundinc</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_fundinc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_fundinc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the FUNDINC column.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_grrec">
+<code class="descname">full_grrec</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_grrec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_grrec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the GRREC column.  Note that the same column has a different calculation for EINs from
+the Full 990 and EINS from the 990 EZ.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_manual">
+<code class="descname">full_manual</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_manual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_manual" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies any manual, one-time fixes to the Full data.  This is usually defined as a change to a single
+EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_netinc">
+<code class="descname">full_netinc</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_netinc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_netinc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the NETINC column.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_rentexp">
+<code class="descname">full_rentexp</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_rentexp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_rentexp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the RENTEXP column.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_rentinc">
+<code class="descname">full_rentinc</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_rentinc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_rentinc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the RENTINC column.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_spevtg">
+<code class="descname">full_spevtg</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_spevtg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_spevtg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="process_full.ProcessFull.full_totrev">
+<code class="descname">full_totrev</code><span class="sig-paren">(</span><em>full</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#ProcessFull.full_totrev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.ProcessFull.full_totrev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the TOTREC column.  Note that TOTREV2 is taken from 990 part VIII, 12A, while TOTREV
+is calculated from the expense and income subtotals.  This is the only column like this, and usually
+any discrepencies between stated and calculated values are tested in the validation steps.  However,
+it was always done this way before, so it continues.</p>
+<p>ARGUMENTS
+full (DataFrame) : Core file dataframe</p>
+<p>RETURNS
+Series</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="process_full.full_dup_criteria">
+<code class="descclassname">process_full.</code><code class="descname">full_dup_criteria</code><span class="sig-paren">(</span><em>dups</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/process_full.html#full_dup_criteria"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#process_full.full_dup_criteria" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="process_ez.html" title="previous chapter">process_ez module</a></li>
+      <li>Next: <a href="process_pf.html" title="next chapter">process_pf module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/process_full.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

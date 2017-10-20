@@ -1,0 +1,722 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>process &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for process</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">process_pf</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">process_ez</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">process_full</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">random</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">dask</span>
+<span class="kn">import</span> <span class="nn">dask.dataframe</span> <span class="k">as</span> <span class="nn">dd</span>
+<span class="n">dask</span><span class="o">.</span><span class="n">set_options</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">dask</span><span class="o">.</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">get</span><span class="p">)</span> <span class="c1">#switch from default multithreading to multiprocessing</span>
+
+<span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="Deduplicate"><a class="viewcode-back" href="../process.html#process.Deduplicate">[docs]</a><span class="k">class</span> <span class="nc">Deduplicate</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that holds the deduplicate method, which knows how to select the &quot;best&quot; of any given EIN that</span>
+<span class="sd">    shows up more than once in the index.  This was originally split into its own class so it could be</span>
+<span class="sd">    inherited in multiple places, but that is now redundant; it is only inherited and called by the Write</span>
+<span class="sd">    class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Deduplicate.deduplicate"><a class="viewcode-back" href="../process.html#process.Deduplicate.deduplicate">[docs]</a>    <span class="k">def</span> <span class="nf">deduplicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">dup_criteria</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for efficiently removing duplicate EINs based on criteria specified in functions found in</span>
+<span class="sd">        process_co_pc and process_pf.</span>
+
+<span class="sd">        Originally the process was handled by building a column of tuples to sort by, but because of the</span>
+<span class="sd">        large apply it was very slow.  The new process works by building temporary columns in order to take</span>
+<span class="sd">        advanrage of vectorized operations under the hood of Pandas.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        source (dict) : A dictionary of DataFrames</span>
+<span class="sd">        form (str) : The current form, e.g. &#39;CO&#39;, &#39;PC&#39;</span>
+<span class="sd">        dup_criteria (func) : The appropriate function for deduplicating the current form</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        DataFrame (with unique index)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="c1">#first discard any entries with FISYR that is more than two years behind the release year</span>
+        <span class="n">release_year</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">core_file_year</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">source</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">source</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="s1">&#39;FISYR&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">release_year</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="c1">#split the data into one dataframe of all duplicates:</span>
+        <span class="n">dups</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;rnd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dups</span><span class="p">))</span>
+        <span class="c1">#and one dataframe of the unique eins</span>
+        <span class="n">df</span>   <span class="o">=</span> <span class="n">df</span><span class="p">[</span>
+                <span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Removing duplicate EINs from </span><span class="si">{}</span><span class="s1">... &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">))</span>
+
+        <span class="c1">#this old method works but is super slow due to the apply</span>
+
+        <span class="c1"># #add a column where the duplicate selection criteria are in order, in a tuple</span>
+        <span class="c1"># dups[&#39;dup_criteria&#39;] = dup_criteria(dups)</span>
+        <span class="c1">#</span>
+        <span class="c1"># #take only the obs from each EIN with the max value of &#39;dup_criteria&#39;, which is calculated left to right</span>
+        <span class="c1"># singled = dups.reset_index().groupby(&#39;EIN&#39;).apply(</span>
+        <span class="c1">#                lambda dups: dups[dups[&#39;dup_criteria&#39;] == dups[&#39;dup_criteria&#39;].max()]</span>
+        <span class="c1">#                ).set_index(&#39;EIN&#39;)</span>
+        <span class="c1"># #drop the dup_criteria rand rnd columns</span>
+        <span class="c1"># singled.drop(&#39;dup_criteria&#39;, axis=1, inplace=True)</span>
+        <span class="c1"># singled.drop(&#39;rnd&#39;, axis=1, inplace=True)</span>
+
+        <span class="n">release_year</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">core_file_year</span> <span class="c1">#an int, e.g. 2005, when the primary FISYR should be 2005</span>
+        <span class="n">start_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dups</span><span class="p">)</span>
+        <span class="n">dups</span><span class="p">,</span> <span class="n">conditions</span> <span class="o">=</span> <span class="n">dup_criteria</span><span class="p">(</span><span class="n">dups</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cond</span> <span class="o">==</span> <span class="s1">&#39;FISYR&#39;</span> <span class="ow">and</span> <span class="n">form</span> <span class="o">!=</span> <span class="s1">&#39;PF&#39;</span><span class="p">:</span>
+                <span class="c1">#need to check FISYR for dups, to make sure we avoid the situation where, for example, the prior release was 2014 but the current release has both 2015 and</span>
+                <span class="c1">#2016 in it.  if we just take the newest FISYR in that case, then the 2015 data will never appear in any release.  but we can&#39;t just take the 2015 data over</span>
+                <span class="c1">#the 2016 data, because some firms may have had 2015 data in the prior release, and thus the 2016 data SHOULD be in this release.</span>
+                <span class="c1">#</span>
+                <span class="c1">#excludes PF because prior year data is not merged into the PF file</span>
+                <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;fisyr_max_minus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dups</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="p">((</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;FISYR&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">release_year</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;FISYRP&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">release_year</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">|</span> <span class="p">((</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;FISYR&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">release_year</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;FISYRP&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">())))</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;fisyr_max_minus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1">#dup_maxes = (dups.reset_index().groupby(&#39;EIN&#39;)[cond].max() - dups.groupby(&#39;EIN&#39;)[&#39;fisyr_max_minus&#39;].max()).to_frame() #will be -0 for all non-FISYR conditions, otherwise will subtract 1 if it meets the above condition for FISYR</span>
+
+            <span class="c1">#dups = dups.merge(dup_maxes, left_index=True, right_index=True, how=&#39;left&#39;, suffixes=(&#39;&#39;, &#39;_max&#39;))</span>
+            <span class="n">dups</span><span class="p">[</span><span class="n">cond</span><span class="o">+</span><span class="s1">&#39;_max&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dups</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)[</span><span class="n">cond</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">dups</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)[</span><span class="s1">&#39;fisyr_max_minus&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="c1">#will be -0 for all non-FISYR conditions, otherwise will subtract 1 if it meets the above condition for FISYR</span>
+            <span class="n">first_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dups</span><span class="p">)</span>
+            <span class="n">dups</span> <span class="o">=</span> <span class="n">dups</span><span class="p">[</span><span class="n">dups</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span> <span class="o">==</span> <span class="n">dups</span><span class="p">[</span><span class="n">cond</span><span class="o">+</span><span class="s1">&#39;_max&#39;</span><span class="p">]]</span>
+            <span class="n">after_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dups</span><span class="p">)</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    </span><span class="si">{}</span><span class="s1"> EINs dropped based on </span><span class="si">{}</span><span class="s1"> from </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_len</span><span class="o">-</span><span class="n">after_len</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">form</span><span class="p">))</span>
+        <span class="n">dups</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="n">c</span><span class="o">+</span><span class="s1">&#39;_max&#39;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dups</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="s1">&#39;rnd&#39;</span><span class="p">,</span> <span class="s1">&#39;fisyr_max_minus&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1">#merge the single-fied duplicate observations back to the original data</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">dups</span><span class="p">])</span><span class="c1">#singled])</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_unique</span><span class="p">),</span> <span class="s1">&#39;Deduplication process did not result in unique EINs in </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> complete, </span><span class="si">{}</span><span class="s1"> total observations dropped.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="n">start_len</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">dups</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">df</span></div></div>
+
+<div class="viewcode-block" id="Process"><a class="viewcode-back" href="../process.html#process.Process">[docs]</a><span class="k">class</span> <span class="nc">Process</span><span class="p">(</span><span class="n">ProcessPF</span><span class="p">,</span> <span class="n">ProcessEZ</span><span class="p">,</span> <span class="n">ProcessFull</span><span class="p">,</span> <span class="n">Deduplicate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for the calculation of all new columns in the core files.  It holds the methods to create</span>
+<span class="sd">    any columns that appear in all three 990 forms (calculated at the initial Full-EZ-PF level, not the</span>
+<span class="sd">    final CO-PC-PF level), while it inherits the methods used by only one or two of the forms from the</span>
+<span class="sd">    ProcessPF, ProcessEZ and ProcessFull classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">main</span><span class="p">,</span> <span class="n">parallelize</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main</span> <span class="o">=</span> <span class="n">main</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span> <span class="o">=</span> <span class="n">parallelize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunksize</span> <span class="o">=</span> <span class="mi">100000</span>
+
+<div class="viewcode-block" id="Process.manual_fixes"><a class="viewcode-back" href="../process.html#process.Process.manual_fixes">[docs]</a>    <span class="k">def</span> <span class="nf">manual_fixes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for applying any manual, one-time fixes to the data.  This is usually defined as a change</span>
+<span class="sd">        to a single EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="k">if</span> <span class="s1">&#39;PF&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pf_manual</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ez_manual</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;Full&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">full_manual</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Process.calculate_columns"><a class="viewcode-back" href="../process.html#process.Process.calculate_columns">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for creating all new, calculated columns in the core files.  The option to parallelize</span>
+<span class="sd">        the calculations using Dask was added here, but was not found to speed the apply process up, so</span>
+<span class="sd">        its use is not recommended.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="c1">#process columns common to all forms:</span>
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Calculating new columns common to all dataframes.&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;FISYR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_fisyr</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;ACCPER&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_accper</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NCCSKEY&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NCCSKEY2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_nccskey</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;RANDNUM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_randnum</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEECC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_nteecc</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEE1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntee1</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_nteefinal1</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;LEVEL4&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level4</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunksize</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level1</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;LEVEL1&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj10</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;NTMAJ10&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_majgrpb</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;MAJGRPB&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level3</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;LEVEL3&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level2</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;LEVEL2&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj12</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;NTMAJ12&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj5</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dask_result&#39;</span><span class="p">:</span><span class="s1">&#39;NTMAJ5&#39;</span><span class="p">})</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;LEVEL1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level1</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTMAJ10&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj10</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;MAJGRPB&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_majgrpb</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;LEVEL3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level3</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;LEVEL2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_level2</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTMAJ12&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj12</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTMAJ5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_ntmaj5</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;PF&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pf_calculate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;EZ&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ez_calculate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;Full&#39;</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">full_calculate</span><span class="p">()</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All columns calculated.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+    <span class="c1"># def handle_duplicates(self):</span>
+    <span class="c1">#     #Redundant method: deduplication moved to Write class.</span>
+    <span class="c1">#     main = self.main</span>
+    <span class="c1">#</span>
+    <span class="c1">#     from process_full import full_dup_criteria</span>
+    <span class="c1">#     from process_ez   import   ez_dup_criteria</span>
+    <span class="c1">#     from process_pf   import   pf_dup_criteria</span>
+    <span class="c1">#     dup_crit_fns = {&#39;EZ&#39;:ez_dup_criteria, &#39;Full&#39;:full_dup_criteria, &#39;PF&#39;:pf_dup_criteria}</span>
+    <span class="c1">#</span>
+    <span class="c1">#     for form in main.forms:</span>
+    <span class="c1">#         dup_criteria = dup_crit_fns[form]</span>
+    <span class="c1">#         main.data_dict[form] = self.deduplicate(main.data_dict, form, dup_criteria)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     main.logger.info(&#39;All duplicate EINs removed.\n&#39;)</span>
+
+<div class="viewcode-block" id="Process.parallel_apply"><a class="viewcode-back" href="../process.html#process.Process.parallel_apply">[docs]</a>    <span class="k">def</span> <span class="nf">parallel_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Experimental.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (dask.core.DataFrame) : A Dask dataframe</span>
+<span class="sd">        func (func) : The function that needs to be applied in parallel</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">dd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)),</span> <span class="s1">&#39;A non-Dask dataframe was sent to the parallel_apply method.&#39;</span>
+        <span class="c1"># df = df.assign(dask_result=df.apply(lambda r: func(r), axis=1, meta=str))</span>
+        <span class="c1"># df = df.assign(dask_result=df.map_partitions(func, columns=[c for c in [&#39;SUBSECCD&#39;, &#39;FNDNCD&#39;, &#39;NTEEFINAL&#39;, &#39;LEVEL3&#39;, &#39;NTMAJ10&#39;] if c in df.columns]))</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">dask_result</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">map_partitions</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+        <span class="c1"># out_string = &#39;Handling parallely apply for {}&#39;.format(func)</span>
+        <span class="c1"># self.main.logger.info(out_string)</span>
+        <span class="c1"># nprocs = self.nprocs #number of pieces to split the df into</span>
+        <span class="c1"># split_size = int(np.ceil(len(df) / nprocs)) #number of rows in each split</span>
+        <span class="c1">#</span>
+        <span class="c1"># def parallel_func(args):</span>
+        <span class="c1">#     func, df = args</span>
+        <span class="c1">#     return df.apply(lambda r: func(r), axis=1)</span>
+        <span class="c1">#</span>
+        <span class="c1"># split_df = [df.iloc[i*split_size:(i+1)*split_size] if (i+1)*split_size &lt;= len(df) else df.iloc[i*split_size:len(df)] for i in range(nprocs)]</span>
+        <span class="c1">#</span>
+        <span class="c1"># param_set = zip([func]*len(split_df), split_df)</span>
+        <span class="c1"># with closing(mp.Pool(nprocs)) as pool:</span>
+        <span class="c1">#     recombine = []</span>
+        <span class="c1">#     for series in pool.imap_unordered(parallel_func, param_set):</span>
+        <span class="c1">#         recombine.append(series)</span>
+        <span class="c1"># return pd.concat(recombine)</span>
+
+<div class="viewcode-block" id="Process.all_randnum"><a class="viewcode-back" href="../process.html#process.Process.all_randnum">[docs]</a>    <span class="k">def</span> <span class="nf">all_randnum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a NumPy array of random numbers, the same length as the core file dataframe.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Process.all_nccskey"><a class="viewcode-back" href="../process.html#process.Process.all_nccskey">[docs]</a>    <span class="k">def</span> <span class="nf">all_nccskey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates two new string columns, one in the form EIN+TAXPER, the other EIN+FISYR.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Two Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="n">temp_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span> <span class="c1">#pulls EIN out of the index</span>
+
+        <span class="c1">#Joins the columns as strings.  Note, TAXPER is tax_prd in IRS original</span>
+        <span class="n">new_col1</span> <span class="o">=</span> <span class="n">temp_df</span><span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">temp_df</span><span class="p">[</span><span class="s1">&#39;TAXPER&#39;</span><span class="p">]</span>
+        <span class="n">new_col2</span> <span class="o">=</span> <span class="n">temp_df</span><span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">temp_df</span><span class="p">[</span><span class="s1">&#39;FISYR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="c1">#resets the indices back to EIN</span>
+        <span class="n">new_col1</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+        <span class="n">new_col2</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+
+        <span class="k">return</span> <span class="n">new_col1</span><span class="p">,</span> <span class="n">new_col2</span></div>
+
+<div class="viewcode-block" id="Process.all_fisyr"><a class="viewcode-back" href="../process.html#process.Process.all_fisyr">[docs]</a>    <span class="k">def</span> <span class="nf">all_fisyr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as just the year portion of the TAXPER column.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;TAXPER&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_accper"><a class="viewcode-back" href="../process.html#process.Process.all_accper">[docs]</a>    <span class="k">def</span> <span class="nf">all_accper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as just the non-year portion (accounting period) of the TAXPER column.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;TAXPER&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_nteecc"><a class="viewcode-back" href="../process.html#process.Process.all_nteecc">[docs]</a>    <span class="k">def</span> <span class="nf">all_nteecc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as a suibset of the NTEEFINAL columns.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_ntee1"><a class="viewcode-back" href="../process.html#process.Process.all_ntee1">[docs]</a>    <span class="k">def</span> <span class="nf">all_ntee1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEEFINAL1 and LEVEL4</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_nteefinal1"><a class="viewcode-back" href="../process.html#process.Process.all_nteefinal1">[docs]</a>    <span class="k">def</span> <span class="nf">all_nteefinal1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and LEVEL4.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_level4"><a class="viewcode-back" href="../process.html#process.Process.all_level4">[docs]</a>    <span class="k">def</span> <span class="nf">all_level4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a Series as a suibset of the NTEEFINAL columns.  Identical to NTEE1 and NTEEFINAL1.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_level1"><a class="viewcode-back" href="../process.html#process.Process.all_level1">[docs]</a>    <span class="k">def</span> <span class="nf">all_level1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on SUBSECCD and FNDNCD.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">level1</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">sbcd</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;SUBSECCD&#39;</span><span class="p">])</span>
+            <span class="n">fndc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;FNDNCD&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">sbcd</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;O&#39;</span>
+            <span class="k">elif</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="p">(</span><span class="n">fndc</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s1">&#39;PF&#39;</span>
+            <span class="k">elif</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="p">(</span><span class="n">fndc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s1">&#39;PC&#39;</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">sbcd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">])</span> <span class="ow">and</span> <span class="p">(</span><span class="n">fndc</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s1">&#39;O&#39;</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">sbcd</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">])</span> <span class="ow">and</span> <span class="p">(</span><span class="n">fndc</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s1">&#39;PC&#39;</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">sbcd</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">])</span> <span class="ow">and</span> <span class="p">(</span><span class="n">fndc</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s1">&#39;PF&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;U&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">level1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">level1</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_ntmaj10"><a class="viewcode-back" href="../process.html#process.Process.all_ntmaj10">[docs]</a>    <span class="k">def</span> <span class="nf">all_ntmaj10</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">ntmaj10</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">ntf</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">or</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Z&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;UN&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;A&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;AR&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ED&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;EN&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;HE&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;J&#39;</span><span class="p">,</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;L&#39;</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;O&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;HU&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;IN&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;PU&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;RE&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;MU&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;UN&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ntmaj10</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">ntmaj10</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_majgrpb"><a class="viewcode-back" href="../process.html#process.Process.all_majgrpb">[docs]</a>    <span class="k">def</span> <span class="nf">all_majgrpb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">majgrpb</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">ntf</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">or</span> <span class="n">ntf</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ntf</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;B4&#39;</span><span class="p">,</span> <span class="s1">&#39;B5&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;BH&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;E2&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;EH&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">majgrpb</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">majgrpb</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_level3"><a class="viewcode-back" href="../process.html#process.Process.all_level3">[docs]</a>    <span class="k">def</span> <span class="nf">all_level3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">level3</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">ntf</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">or</span> <span class="n">ntf</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;-&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;B8&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;11&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZA&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;B8&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;12&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZB&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;2&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZC&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZD&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;7&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZE&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;90&#39;</span><span class="p">,</span> <span class="s1">&#39;99&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZF&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;6&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ZF&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Y30&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;MR&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Y&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;30&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;MO&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;A&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;AR&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;B&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;ED&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;EN&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;HE&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;J&#39;</span><span class="p">,</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;L&#39;</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;O&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;HS&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;IN&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;PB&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;RE&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Z&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;UN&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;-&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">level3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">level3</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_level2"><a class="viewcode-back" href="../process.html#process.Process.all_level2">[docs]</a>    <span class="k">def</span> <span class="nf">all_level2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on SUBSECCD, FNDNCD, LEVEL3 and NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">level2</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">sbcd</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;SUBSECCD&#39;</span><span class="p">])</span>
+            <span class="n">fndc</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;FNDNCD&#39;</span><span class="p">])</span>
+            <span class="n">lvl3</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;LEVEL3&#39;</span><span class="p">]</span>
+            <span class="n">ntf</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">fndc</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;S&#39;</span>
+            <span class="k">elif</span> <span class="n">sbcd</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">fndc</span> <span class="o">==</span> <span class="mi">17</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;S&#39;</span>
+            <span class="k">elif</span> <span class="n">lvl3</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">and</span> <span class="n">lvl3</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="n">lvl3</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Z&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;S&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">and</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;M&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;O&#39;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">level2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">level2</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_ntmaj12"><a class="viewcode-back" href="../process.html#process.Process.all_ntmaj12">[docs]</a>    <span class="k">def</span> <span class="nf">all_ntmaj12</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">ntmaj12</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="n">ntf</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTEEFINAL&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;B4&#39;</span><span class="p">,</span> <span class="s1">&#39;B5&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;BH&#39;</span>
+            <span class="k">elif</span> <span class="n">ntf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span> <span class="ow">and</span> <span class="n">ntf</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;E2&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;EH&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTMAJ10&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ntmaj12</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">ntmaj12</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Process.all_ntmaj5"><a class="viewcode-back" href="../process.html#process.Process.all_ntmaj5">[docs]</a>    <span class="k">def</span> <span class="nf">all_ntmaj5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a piecewise value based on NATMAJ10, which is in turn calculated from NTEEFINAL.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        df (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series or dask.core.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">ntmaj5</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTMAJ10&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;IN&#39;</span><span class="p">,</span> <span class="s1">&#39;EN&#39;</span><span class="p">,</span> <span class="s1">&#39;PU&#39;</span><span class="p">,</span> <span class="s1">&#39;RE&#39;</span><span class="p">,</span> <span class="s1">&#39;MU&#39;</span><span class="p">,</span> <span class="s1">&#39;UN&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;OT&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;NTMAJ10&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallelize</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parallel_apply</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ntmaj5</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">ntmaj5</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

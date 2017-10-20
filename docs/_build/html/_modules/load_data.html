@@ -1,0 +1,534 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>load_data &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for load_data</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">stat</span> <span class="k">import</span> <span class="n">S_IREAD</span><span class="p">,</span> <span class="n">S_IRGRP</span><span class="p">,</span> <span class="n">S_IROTH</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">pymysql</span>
+
+<span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="LoadData"><a class="viewcode-back" href="../load_data.html#load_data.LoadData">[docs]</a><span class="k">class</span> <span class="nc">LoadData</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is inherited by the Data class, and contains the methods related to retrieving data remotely.</span>
+<span class="sd">    From the web, that includes the raw 990 IRS data, the raw epostcard (990N) IRS data, and the raw BMR IRS</span>
+<span class="sd">    data.  From NCCS MySQL, it has the methods for nteedocAllEins, lu_fipsmsa, and all of the prior NCCS</span>
+<span class="sd">    core file releases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="LoadData.get_urls"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.get_urls">[docs]</a>    <span class="k">def</span> <span class="nf">get_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for loading the URLs necessary for downloads into memory.</span>
+
+<span class="sd">        Main core file URL: https://www.irs.gov/uac/soi-tax-stats-annual-extract-of-tax-exempt-organization-financial-data</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">path</span>
+
+        <span class="n">entries</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;PF&#39;</span><span class="p">:{},</span> <span class="s1">&#39;EZ&#39;</span><span class="p">:{},</span> <span class="s1">&#39;Full&#39;</span><span class="p">:{},</span> <span class="s1">&#39;BMF&#39;</span><span class="p">:{},</span> <span class="s1">&#39;epostcard&#39;</span><span class="p">:{}}</span>
+
+        <span class="n">entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">form_urls</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epost_urls</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bmf_urls</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">=</span> <span class="n">entries</span></div>
+
+<div class="viewcode-block" id="LoadData.form_urls"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.form_urls">[docs]</a>    <span class="k">def</span> <span class="nf">form_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Processes the text file in the &quot;settings/urls&quot; folder for EZ, Full and PF download paths.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs</span>
+<span class="sd">        path (str) : The base path on the local system</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        entries (dict) : Updated with the core file URLs as an entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">urlregex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(\d</span><span class="si">{4}</span><span class="s1">)\s*=\s*(https?:\/\/.+\.(dat|zip|csv|txt))\s*&#39;</span><span class="p">)</span>
+        <span class="n">skipline</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^#&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;urls&#39;</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">regex_match</span> <span class="o">=</span> <span class="n">urlregex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="n">skip_match</span> <span class="o">=</span> <span class="n">skipline</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">regex_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_match</span><span class="p">:</span>
+                        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">regex_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                        <span class="n">url</span>    <span class="o">=</span> <span class="n">regex_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                        <span class="n">entries</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">entries</span></div>
+
+<div class="viewcode-block" id="LoadData.epost_urls"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.epost_urls">[docs]</a>    <span class="k">def</span> <span class="nf">epost_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Processes the text file in the &quot;settings/urls&quot; folder for the epostcard (990N) download path.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs</span>
+<span class="sd">        path (str) : The base path on the local system</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        entries (dict) : Updated with the epostcard URLs as an entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">epostregex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(epostcard)\s*=\s*(https?:\/\/.+\.(dat|zip|csv|txt))\s*&#39;</span><span class="p">)</span>
+        <span class="n">skipline</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^#&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;urls&#39;</span><span class="p">,</span> <span class="s1">&#39;epostcard.txt&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">regex_match</span> <span class="o">=</span> <span class="n">epostregex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">skip_match</span> <span class="o">=</span> <span class="n">skipline</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">regex_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_match</span><span class="p">:</span>
+                    <span class="n">url</span>    <span class="o">=</span> <span class="n">regex_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">entries</span><span class="p">[</span><span class="s1">&#39;epostcard&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="k">return</span> <span class="n">entries</span></div>
+
+<div class="viewcode-block" id="LoadData.bmf_urls"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.bmf_urls">[docs]</a>    <span class="k">def</span> <span class="nf">bmf_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Processes the text file in the &quot;settings/urls&quot; folder for BMF download path.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        entries (dict) : A dictionary with keys=form and values=URLs or dict of URLs</span>
+<span class="sd">        path (str) : The base path on the local system</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        entries (dict) : Updated with the BMF URLs as an entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bmfregex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(region\d)\s*=\s*(https?:\/\/.+\.(dat|zip|csv|txt))\s*&#39;</span><span class="p">)</span>
+        <span class="n">skipline</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^#&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="s1">&#39;urls&#39;</span><span class="p">,</span> <span class="s1">&#39;bmf.txt&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">regex_match</span> <span class="o">=</span> <span class="n">bmfregex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">skip_match</span> <span class="o">=</span> <span class="n">skipline</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">regex_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">skip_match</span><span class="p">:</span>
+                    <span class="n">url</span>    <span class="o">=</span> <span class="n">regex_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">region</span> <span class="o">=</span> <span class="n">regex_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">entries</span><span class="p">[</span><span class="s1">&#39;BMF&#39;</span><span class="p">][</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="k">return</span> <span class="n">entries</span></div>
+
+<div class="viewcode-block" id="LoadData.download"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.download">[docs]</a>    <span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for downloading the main core files from the IRS, setting the EIN as the index, and</span>
+<span class="sd">        updating the SOURCE column with the appropriate file name.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">delim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">irs_delim</span>
+        <span class="n">current_yr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core_file_year</span> <span class="c1">#int</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Beginning any necessary downloads from the IRS.&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">main</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="n">form</span><span class="p">][</span><span class="n">current_yr</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;URL not found for core file year </span><span class="si">{}</span><span class="s1">, form </span><span class="si">{}</span><span class="s1">.  Please check the &quot;urls&quot; folder.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">current_year</span><span class="p">,</span> <span class="n">form</span><span class="p">))</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="n">sep</span><span class="o">=</span><span class="n">delim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+
+            <span class="c1">#Most IRS files have EIN in caps, but at least one (2012 EZ) has it in lowercase</span>
+            <span class="k">if</span> <span class="s1">&#39;ein&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ein&#39;</span><span class="p">:</span><span class="s1">&#39;EIN&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1">#adds the source file name as a column</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Downloading complete.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LoadData.sql_auth"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.sql_auth">[docs]</a>    <span class="k">def</span> <span class="nf">sql_auth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handles logging into the NCCS MySQL server, including prompting for credentials.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_from_sql</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Authenticating connection to MySQL server...&#39;</span><span class="p">)</span>
+            <span class="n">un</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;    MySQL user name: &#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+                <span class="c1">#program is being run in an interactive interpreter, and the password echo can&#39;t be shut off</span>
+                <span class="n">pw</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;    MySQL password: &#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#system is running from the command line, and password echo can be off</span>
+                <span class="n">pw</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s1">&#39;    MySQL password: &#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span> <span class="o">=</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sql_server_name</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="s1">&#39;nccs&#39;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">un</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">pw</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">pymysql</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    failed to connect to server; will try to load from downloads/nccs folder.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    login successful, will attempt to retrieve all necessary data from the SQL database.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Without logging into NCCS MySQL server, will look for all files in downloads/nccs folder.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="LoadData.close_sql"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.close_sql">[docs]</a>    <span class="k">def</span> <span class="nf">close_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cleanly shuts down the NCCS MySQL connection.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_from_sql</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Cosing MySQL connection.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="LoadData.get_sql"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.get_sql">[docs]</a>    <span class="k">def</span> <span class="nf">get_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">dbase</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="n">match_dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_sql_cols</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for downloading a file, passed as the &quot;fname&quot; argument, from the MySQL connection established</span>
+<span class="sd">        in the sql_auth method.</span>
+
+<span class="sd">        It will first check its own cache to see if it has already downloaded the file and is holding it in</span>
+<span class="sd">        memory, then it will look in the &quot;downloads/nccs&quot; folder to see if that exact fname has already been</span>
+<span class="sd">        downloaded.  Only if both of those are false will it connect to MySQL to retrieve the file.</span>
+
+<span class="sd">        For users off the Urban campus or without a login to the NCCS MySQL server, having all the necessary</span>
+<span class="sd">        files as .csv documents in the &quot;downloads/nccs&quot; folder means the program can still build.  See</span>
+<span class="sd">        &quot;folder instructions.txt&quot; in that folder for more details.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        cols (str or list): Default &#39;*&#39;, used when only a subset of the data should be returned.</span>
+<span class="sd">        index_col (str): Default &#39;EIN&#39;, specifies the column to use as the index.</span>
+<span class="sd">        match_dtypes (DataFrame): Default None, if a dataframe is passed it will extract the schema from</span>
+<span class="sd">                                  it and apply it to the data specified in fname; otherwise it uses the</span>
+<span class="sd">                                  MySQL defaults.</span>
+<span class="sd">        force_sql_cols (bool): Default False, If True it will force the columns specified in the cols argument</span>
+<span class="sd">                               to become a part of the SQL statement; otherwise it downloads * in the SELECT</span>
+<span class="sd">                               statement and then subsets it later.  This is used, for example, in</span>
+<span class="sd">                               nteedocAllEINS because the full file is 1.5 gigabytes but only 1/3rd of that is</span>
+<span class="sd">                               needed.</span>
+<span class="sd">        RETURNS</span>
+<span class="sd">        DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nccs_download_folder</span><span class="p">)</span>
+        <span class="n">existing_downloads</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="n">existing_downloads</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">existing_downloads</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.csv&#39;</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File already cached; trying version in memory.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_cache</span><span class="p">[</span><span class="n">fname</span><span class="p">][</span><span class="n">cols</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    Specified columns not in memory.&#39;</span><span class="p">)</span>
+                    <span class="k">pass</span> <span class="c1">#if the dataframe is cached already but the desired cols are missing, continue with sql loading</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_cache</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">fname</span><span class="o">+</span><span class="s1">&#39;.csv&#39;</span> <span class="ow">in</span> <span class="n">existing_downloads</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File found in NCCS downloads; using already-downloaded version.&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">match_dtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">dtype</span> <span class="o">=</span> <span class="n">match_dtypes</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                <span class="n">dtype</span><span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">fname</span><span class="o">+</span><span class="s1">&#39;.csv&#39;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">low_memory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_col</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">match_dtypes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">num_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">:</span>
+                    <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1">#recast the str columns to float64 or int64</span>
+                <span class="n">str_cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">object_</span><span class="p">])</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span> <span class="c1">#fill string NA columns with empty strings</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">str_cols</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">str_cols</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">con</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql_connection</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">select_db</span><span class="p">(</span><span class="n">dbase</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">force_sql_cols</span><span class="p">:</span>
+                <span class="n">sql_cols</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql_cols</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="s1">&#39;SELECT </span><span class="si">{}</span><span class="s1"> FROM </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sql_cols</span><span class="p">,</span> <span class="n">fname</span><span class="p">),</span> <span class="n">con</span><span class="o">=</span><span class="n">con</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="n">index_col</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">match_dtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;    standardizing dtypes for </span><span class="si">{}</span><span class="s1">...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+
+                <span class="k">def</span> <span class="nf">_dtype_matcher</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">match_dtypes</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                        <span class="n">desired_type</span> <span class="o">=</span> <span class="n">match_dtypes</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span>
+                        <span class="k">if</span> <span class="n">desired_type</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">object_</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">desired_type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">]:</span>
+                            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="c1">#assume strings for anything else (e.g. dates)</span>
+                            <span class="c1">#raise Exception(&#39;Unknown dtype: {}, {}&#39;.format(c.name, desired_type))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_dtype_matcher</span><span class="p">)</span> <span class="c1">#this is not very efficient, but I haven&#39;t found a better way to make sure all dtypes match from SQL</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">fname</span><span class="o">+</span><span class="s1">&#39;.csv&#39;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No active connection to NCCS MySQL database, and file not found in downloads/nccs folder: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sql_cache</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span> <span class="c1">#save all dataframes loaded from sql in case they are needed later, because sql load times are slow</span>
+
+        <span class="k">if</span> <span class="n">cols</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;EIN&#39;</span><span class="p">]]</span></div>
+
+<div class="viewcode-block" id="LoadData.download_epostcard"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.download_epostcard">[docs]</a>    <span class="k">def</span> <span class="nf">download_epostcard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="s1">&#39;EPOSTCARD&#39;</span><span class="p">],</span> <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;EPOSTCARD&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for downloading the epostcard (990N) data from the IRS.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        usecols (list) : Default [0, 1], this data comes without headers, so the subset needed is given as</span>
+<span class="sd">                         indexes.</span>
+<span class="sd">        names (list) : Default [&#39;EIN&#39;, &#39;EPOSTCARD&#39;], provides the header names.  Must be the same dimension</span>
+<span class="sd">                       as usecols.</span>
+<span class="sd">        date_col (str) : Default &#39;EPOSTCARD&#39;, specifies the column to be converted to date dtype.</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;epostcard&#39;</span><span class="p">]</span>
+        <span class="n">delim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epostcard_delim</span>
+        <span class="c1">#a df of &#39;EIN&#39;, &#39;YEAR&#39; from the epostcard records</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                          <span class="n">skip_blank_lines</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">sep</span><span class="o">=</span><span class="n">delim</span><span class="p">,</span>
+                          <span class="n">usecols</span><span class="o">=</span><span class="n">usecols</span><span class="p">,</span>
+                          <span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span>
+                          <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">date_col</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="c1">#drop null dates</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_unique</span><span class="p">),</span> <span class="s1">&#39;Expected unique EINs in epostcard data.&#39;</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="LoadData.download_bmf"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.download_bmf">[docs]</a>    <span class="k">def</span> <span class="nf">download_bmf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accesses the stored URLs for the raw BMF files from the IRS, then passes the necessary information</span>
+<span class="sd">        into the download_file method.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bmf_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">delim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bmf_delim</span>
+        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;BMF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">[</span><span class="s1">&#39;BMF&#39;</span><span class="p">][</span><span class="n">region</span><span class="p">]</span>
+            <span class="n">bmf_data</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="n">sep</span><span class="o">=</span><span class="n">delim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">bmf_data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;EIN&#39;</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_unique</span><span class="p">),</span> <span class="s1">&#39;Expected unique EINs in BMF data.&#39;</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="LoadData.download_file"><a class="viewcode-back" href="../load_data.html#load_data.LoadData.download_file">[docs]</a>    <span class="k">def</span> <span class="nf">download_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for downloading the specified URL, then unzipping it if necessary.  All newly-downloaded</span>
+<span class="sd">        files are set to read-only.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        url (str) : Any valid URL</span>
+<span class="sd">        force (bool) : Default False, when True it will ignore existing files in the &quot;downloads/IRS&quot; folder,</span>
+<span class="sd">                       when False it will only download a new version if the file does not already exist.</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        str : Location on local file system of the downloaded (or pre-existing) file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">irs_download_folder</span><span class="p">)</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1">#extracts the file name from the end of the url</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span> <span class="c1">#full location of file to write to</span>
+
+        <span class="k">if</span> <span class="n">main</span><span class="o">.</span><span class="n">force_new_download</span> <span class="ow">or</span> <span class="n">force</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_file</span><span class="p">):</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+
+            <span class="c1">#this catches invalid URLs entered into the url text files: the IRS website returns a</span>
+            <span class="c1">#page saying &quot;404 error code&quot; but since that page is a valid page, it returns an actual</span>
+            <span class="c1">#success code of 200.  Simply searching for &#39;Page Not Found&#39; in the body is very slow</span>
+            <span class="c1">#when it is an actual download link with a large file, so it first checks the headers</span>
+            <span class="c1">#to make sure it&#39;s not [&#39;Content-Type&#39;] = &#39;application/zip&#39;</span>
+            <span class="k">if</span> <span class="s1">&#39;text/html&#39;</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="s1">&#39;Page Not Found&#39;</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Warning: the url </span><span class="si">{}</span><span class="s1"> appears to be invalid.&#39;</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ofile</span><span class="p">:</span>
+                <span class="n">ofile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">S_IREAD</span><span class="o">|</span><span class="n">S_IRGRP</span><span class="o">|</span><span class="n">S_IROTH</span><span class="p">)</span> <span class="c1">#sets the download to read-only</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File </span><span class="si">{}</span><span class="s1"> downloaded.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.zip&#39;</span><span class="p">):</span>
+                <span class="n">zip_ref</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+                <span class="n">zip_ref</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="c1">#unzips into the download path</span>
+
+                <span class="c1">#looks at the list of unizpped items, warns if there is more than 1</span>
+                <span class="n">unzipped_files</span> <span class="o">=</span> <span class="n">zip_ref</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+                <span class="n">zip_ref</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1">#finished with the zip object</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unzipped_files</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;WARNING: More or less than one file in </span><span class="si">{}</span><span class="s1">; system may not be using the right one as data.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+
+                <span class="c1">#sets the unzipped files to read-only</span>
+                <span class="k">for</span> <span class="n">nfile</span> <span class="ow">in</span> <span class="n">unzipped_files</span><span class="p">:</span>
+                    <span class="n">output_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">nfile</span><span class="p">)</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">S_IREAD</span><span class="o">|</span><span class="n">S_IRGRP</span><span class="o">|</span><span class="n">S_IROTH</span><span class="p">)</span>
+                    <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File </span><span class="si">{}</span><span class="s1"> extracted from zip.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nfile</span><span class="p">))</span>
+
+                    <span class="c1">#returns the contents of a zip file as the output file</span>
+                    <span class="k">return</span> <span class="n">output_file</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">#returns the output file if it&#39;s not zipped</span>
+                <span class="k">return</span> <span class="n">output_file</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Using existing contents of </span><span class="si">{}</span><span class="s1"> in downloads.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">output_file</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,308 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>NCCS Core File Documentation &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="main module" href="main.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="nccs-core-file-documentation">
+<h1>NCCS Core File Documentation<a class="headerlink" href="#nccs-core-file-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>We began rewriting the NCCS core file process in the fall of 2016.  The previous system, written in SQL, required manual intervention throughout the build and partial rewriting of the code every year, as well as being a fairly opaque process.  It was also part of the NCCS system that was hidden from users, with even the data behind a paywall.  We had several goals with this project:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Create a process that would be consistent from year to year<ul>
+<li>Automate every possible step</li>
+<li>Streamline any necessary human intervention</li>
+</ul>
+</li>
+<li>Create a process that was as open as possible<ul>
+<li>Use an open-source code base</li>
+<li>Make the code publically available</li>
+<li>Make the final product freely available</li>
+</ul>
+</li>
+<li>Make our manual changes transparent</li>
+<li>Review some aspects of the data creation that hadn’t been looked at in many years</li>
+<li>Reduce the need for maintenance of the code for every new release, thus freeing more NCCS resources to be used on manual validation</li>
+<li>Add some new validation processes, particularly for the form PF</li>
+</ul>
+</div></blockquote>
+<p>More…</p>
+</div>
+<div class="section" id="where-to-find-the-data">
+<h2>Where to Find the Data<a class="headerlink" href="#where-to-find-the-data" title="Permalink to this headline">¶</a></h2>
+<p>If you only wish to use the final NCCS core file release data, and are not interested in how they were built, you can skip all of this and go directly to the <a class="reference external" href="http://nccs-data.urban.org/data.php?ds=core">NCCS Data Archive</a>.</p>
+</div>
+<div class="section" id="can-i-build-the-data-myself">
+<h2>Can I Build the Data Myself?<a class="headerlink" href="#can-i-build-the-data-myself" title="Permalink to this headline">¶</a></h2>
+<p>All of our code is open source, and everything you need to build a semblance of the data yourself is available.  The only pieces missing are the manual changes NCCS adds each year, which can be significant.  See the section on validation below for more details.</p>
+<p>If you do not have a login to the NCCS MySQL server (which only works from the Urban campus), you will need to manually download the necessary files first.  They are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="http://nccs-data.urban.org/data/misc/nccs.lu_fipsmsa.csv">lu_fipsmsa</a></li>
+<li><a class="reference external" href="http://nccs-data.urban.org/data/misc/nccs.nteedocAllEins.csv">nteedocAllEins</a></li>
+<li><a class="reference external" href="http://nccs-data.urban.org/data.php?ds=core">Past core file releases</a> equal to the value set in <strong>main.py</strong> under the <strong>backfill</strong> setting (see below), which is usually the prior three years.</li>
+</ul>
+</div></blockquote>
+<p>Those files must be placed in the folder <strong>nccs-file-processing\core files\downloads\nccs</strong> as CSV documents.</p>
+</div>
+<div class="section" id="building-the-core-files">
+<h2>Building the Core Files<a class="headerlink" href="#building-the-core-files" title="Permalink to this headline">¶</a></h2>
+<p>In order to have access to the program state for debugging and the ability to query various intermediate steps after program completion, it is suggested you build the core files from within an interactive interpreter.  There are many ways to work with Python that generally come down to personal preference, so you can obviously deviate from these specifics.</p>
+<p>Also please note that while the program <em>should</em> be entirely platform-agnostic, it has only been tested in a Windows environment.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Download the Python version 3.x distribution from <a class="reference external" href="https://www.anaconda.com/download/">Anaconda</a>.  The core file process does not support Python version 2.x</li>
+<li>Install Anaconda, as well as your prefered text editor (or use an option included with Anaconda) if you will want to look at the source code.</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>For example, <a class="reference external" href="https://notepad-plus-plus.org/download/v7.5.1.html">Notepad++</a> or <a class="reference external" href="https://atom.io/">Atom</a></li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Clone the NCCS Core File repository from <a class="reference external" href="https://github.com/UI-Research/nccs-file-processing">GitHub</a></li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>If you do not have GitHub set up, you will need to create a free account and then start by downloading <a class="reference external" href="https://desktop.github.com/">GitHub Desktop</a></li>
+<li>From the link to the NCCS GitHub repository, there is a green button to the right that says <strong>Clone or download</strong>.  Click it, then click <strong>Open in Desktop</strong>.</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li>Use your text editor to open <strong>main.py</strong> and set the options at the top, most notably:</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><strong>current_yr</strong>: The release year you want to build.</li>
+<li><strong>forms</strong>: [‘EZ’, ‘Full’, ‘PF’] will build all releases.</li>
+<li><strong>get_from_sql</strong>: Set to False if you do not have a login to the NCCS MySQL server.<ul>
+<li>See the section above, <em>Can I Build the Data Myself?</em></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="5">
+<li>Open a command prompt and type in <strong>ipython</strong>.</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>On Windows, open a command prompt by pressing <strong>WindowKey+R</strong> and typing <strong>cmd</strong>.</li>
+<li>If the system cannot find ipython and you have just installed Anaconda, you may need to reboot so it updates your system path.</li>
+</ul>
+</div></blockquote>
+<ol class="arabic" start="6">
+<li><p class="first">Use the <strong>%run</strong> IPython magic to start the build process as follows, substituting in the exact path you cloned the repository to:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">%</span><span class="n">run</span> <span class="s2">&quot;d:\users\jlevy\documents\github</span><span class="se">\n</span><span class="s2">ccs-file-processing\core files\main.py&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="the-validation-process">
+<h2>The Validation Process<a class="headerlink" href="#the-validation-process" title="Permalink to this headline">¶</a></h2>
+<p>The raw form 990 data the IRS releases generally relies upon the submitting firm for the accuracy of the figures.  There are three ways the NCCS core file process approaches this issue: checking for arithmetic failures, looking at firms with huge swings in revenue, assets or expenses between years, and paying extra scrutiny to the largest firms who have the most potential to skew aggregate figures.</p>
+<div class="section" id="arithmetic-failures">
+<h3>Arithmetic Failures<a class="headerlink" href="#arithmetic-failures" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Many parts of the IRS 990 forms ask for the values in a handful of sub fields, followed by a total.  Clearly the sub fields should add up to that total, but often times they do not.  The core file process tests for this across a handful of columns in all three forms, and marks any that are off by more than a certain threshold (generally $1,000) as “failures”.</div></blockquote>
+</div>
+<div class="section" id="large-changes">
+<h3>Large Changes<a class="headerlink" href="#large-changes" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>Any firm whose revenue, assets or expenses change by more than 50% of their prior-year value will be flagged as a “changed” firm.  An additional requirement of revenue over $10 million is imposed, since it is much easier for smaller non profits to experience large percentage swings in these categories.</div></blockquote>
+</div>
+<div class="section" id="largest-firms">
+<h3>Largest Firms<a class="headerlink" href="#largest-firms" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>And finally, firms that are in the largest 1% of any of revenue, assets or expenses are marked for review as “large”.  This is done solely because of their ability to dramatically affect aggregates if anything is incorrect.</div></blockquote>
+<p>The code automatically flags all firms that fall into any of these three categories.  However, in most years, NCCS lacks the capacity to manually review every issue.  In 2014, the CO, PC and PF release files were flagged with 1,052, 1,314 and 422 issues, respectively.  Each of these firms had one or more failures that required the raw IRS data to be manually compared to the firm’s actual form 990 (hosted by the <a class="reference external" href="http://990finder.foundationcenter.org/">Foundation Center</a>), and sometimes other sources as well (such as the firm’s website).  This amounted to, in the 2014 CO file, total revenue changes of $1.34 billion, assets of $148 million, and expenses of $40 million.</p>
+<p>Many of these organizations flagged as “changed” or “largest” do not end up requiring any adjustments.  Sometimes, however, very large errors can be found this way.  For example, if you search <a class="reference external" href="http://990finder.foundationcenter.org/">Foundation Center</a> for EIN <strong>042103594</strong>, you will see the Massachusetts Institute of Technology.  This EIN in 2013 has two filings, however; one showing assets of almost $17.7 billion, and the other showing assets of $30,000.  A closer examination reveals that the Tau Beta Pi engineering honors society at MIT incorrectly filed their returns using MIT’s EIN.  This would be clearly flagged as a “changed” firm, and then manually corrected in the NCCS release.</p>
+<p>We prioritize the review process by firm size and type of failure, with all of our fixes available for review at (link).  Lower-priority failures we are unable to manually review are still marked in the data.  The column named <strong>VALIDATION_REASON</strong> can either be empty for firms with no failures, or will be marked <strong>F</strong> for arithmetic failures, <strong>C</strong> for firms with large changes, <strong>L</strong> for the very largest firms, or any permutation of those three together.  Compare that to the column <strong>VALIDATION_STATE</strong>, which takes on the value <strong>0</strong> for unreviewed, <strong>1</strong> for fixed, <strong>2</strong> for ignored or <strong>3</strong> for checked okay.</p>
+</div>
+</div>
+<div class="section" id="code-details-and-docstrings">
+<h2>Code Details and Docstrings<a class="headerlink" href="#code-details-and-docstrings" title="Permalink to this headline">¶</a></h2>
+<p>Below are the different modules of the core file creation code, along with the descriptions of all of the classes, functions and methods used in each.</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">Build</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">Load Data</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">Process CO PC</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">Validate PF</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="write.html">Write</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="main.html" title="next chapter">main module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

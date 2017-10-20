@@ -1,0 +1,282 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>process_ez &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for process_ez</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">process_co_pc</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="ez_dup_criteria"><a class="viewcode-back" href="../process_ez.html#process_ez.ez_dup_criteria">[docs]</a><span class="k">def</span> <span class="nf">ez_dup_criteria</span><span class="p">(</span><span class="n">dups</span><span class="p">):</span>
+    <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;val&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">+</span> <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;ASS_EOY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">+</span> <span class="n">dups</span><span class="p">[</span><span class="s1">&#39;EXPS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">dups</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;FISYR&#39;</span><span class="p">,</span> <span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="s1">&#39;STYEAR&#39;</span><span class="p">,</span> <span class="s1">&#39;rnd&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ">[docs]</a><span class="k">class</span> <span class="nc">ProcessEZ</span><span class="p">(</span><span class="n">ProcessCOPC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates columns found only in the EZ dataframe</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ProcessEZ.ez_calculate"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_calculate">[docs]</a>    <span class="k">def</span> <span class="nf">ez_calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for calling all of the methods to calculate the columns for the 990 EZ form.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+        <span class="n">ez</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span>
+
+        <span class="n">main</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Calculating new columns for EZ.&#39;</span><span class="p">)</span>
+
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_totrev</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRREC&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_grrec</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;PROGREV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_progrev</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SPEVTG&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_spevtg</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;NETGNLS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_netgnls</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;FILENAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ez_filename</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;EPOSTCARD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copc_epostcard</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;STYEAR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copc_styear</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SOIYR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copc_soiyr</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span>
+        <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SUBCD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copc_subcd</span><span class="p">(</span><span class="n">ez</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_grrec"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_grrec">[docs]</a>    <span class="k">def</span> <span class="nf">ez_grrec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the GRREC column.  Note that the same column has a different calculation for EINs from</span>
+<span class="sd">        the Full 990 and EINS from the 990 EZ.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHG&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DIREXP&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GOODS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TOTREV&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHG&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DIREXP&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GOODS&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_progrev"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_progrev">[docs]</a>    <span class="k">def</span> <span class="nf">ez_progrev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the PROGREV column.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DUESASSESMNTS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;PRGMSERVREV&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;DUESASSESMNTS&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;PRGMSERVREV&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_spevtg"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_spevtg">[docs]</a>    <span class="k">def</span> <span class="nf">ez_spevtg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the SPEVTG column.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCFNDRSNG&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCGAMING&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCFNDRSNG&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;GRSINCGAMING&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_totrev"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_totrev">[docs]</a>    <span class="k">def</span> <span class="nf">ez_totrev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the PROGREV column.  Note that TOTREV2 is taken from 990EZ part I, 9, while TOTREV</span>
+<span class="sd">        is calculated from the expense and income subtotals.  This is the only column like this, and usually</span>
+<span class="sd">        any discrepencies between stated and calculated values are tested in the validation steps.  However,</span>
+<span class="sd">        it was always done this way before, so it continues.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;EXPS&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;NETINC&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_netgnls"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_netgnls">[docs]</a>    <span class="k">def</span> <span class="nf">ez_netgnls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the SALEOTHN column exactly.  Redundant holdover from the old SQL process.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;SALEOTHN&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_filename"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_filename">[docs]</a>    <span class="k">def</span> <span class="nf">ez_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ez</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assembles the FILENAME column from the EIN and TAXPER columns, which is used to build the URL to</span>
+<span class="sd">        the PDF of the 990 filing on the Foundation Center&#39;s website.  The full construction is:</span>
+
+<span class="sd">        http://990s.foundationcenter.org/990_pdf_archive/&lt;FIRST THREE DIGITS OF EIN&gt;/&lt;FULL EIN&gt;/&lt;FILENAME&gt;.pdf</span>
+
+<span class="sd">        for 990 Full or EZ filings, or</span>
+
+<span class="sd">        http://990s.foundationcenter.org/990pf_pdf_archive/&lt;FIRST THREE DIGITS OF EIN&gt;/&lt;FULL EIN&gt;/&lt;FILENAME&gt;.pdf</span>
+
+<span class="sd">        for 990 PF filings.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        ez (DataFrame) : Core file dataframe</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ez</span><span class="o">.</span><span class="n">index</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">ez</span><span class="p">[</span><span class="s1">&#39;TAXPER&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_990EZ&#39;</span></div>
+
+<div class="viewcode-block" id="ProcessEZ.ez_manual"><a class="viewcode-back" href="../process_ez.html#process_ez.ProcessEZ.ez_manual">[docs]</a>    <span class="k">def</span> <span class="nf">ez_manual</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Applies any manual, one-time fixes to the EZ data.  This is usually defined as a change to a single</span>
+<span class="sd">        EIN from a single year, in a non-generalizable way, e.g. a mistyped EIN in the raw IRS data.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">&#39;580623603&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;SOURCE&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;16eofinextractez.dat&#39;</span> <span class="ow">and</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;NAME&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;UNITED WAY OF THE COASTAL EMPIRE INC&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;EZ&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;580623603&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

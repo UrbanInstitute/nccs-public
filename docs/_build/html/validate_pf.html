@@ -1,0 +1,203 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>validate_pf module &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="validation_fixer module" href="validation_fixer.html" />
+    <link rel="prev" title="validate_full module" href="validate_full.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-validate_pf">
+<span id="validate-pf-module"></span><h1>validate_pf module<a class="headerlink" href="#module-validate_pf" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="validate_pf.ValidatePF">
+<em class="property">class </em><code class="descclassname">validate_pf.</code><code class="descname">ValidatePF</code><a class="reference internal" href="_modules/validate_pf.html#ValidatePF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Methods for validating EINs from IRS form 990 PF.</p>
+<p>Each method called by validate_pf represents the validation of one column, and comes with the kwarg
+fixer_display=False, which when set to True will return only a string representation of the equation.
+This is for use in the validation fixer tool.</p>
+<p>Note that the PF data was never validated before, in the old SQL code.  These were all added based
+strictly on sums given by the IRS form itself.</p>
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14t4942">
+<code class="descname">pf_validate_p14t4942</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14t4942"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14t4942" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tasvl">
+<code class="descname">pf_validate_p14tasvl</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tasvl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tasvl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tendw">
+<code class="descname">pf_validate_p14tendw</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tendw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tendw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tginv">
+<code class="descname">pf_validate_p14tginv</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tginv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tginv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tnadj">
+<code class="descname">pf_validate_p14tnadj</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tnadj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tnadj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tpsup">
+<code class="descname">pf_validate_p14tpsup</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tpsup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tpsup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14tqdis">
+<code class="descname">pf_validate_p14tqdis</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14tqdis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14tqdis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p14ttsup">
+<code class="descname">pf_validate_p14ttsup</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p14ttsup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p14ttsup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p1excrev">
+<code class="descname">pf_validate_p1excrev</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p1excrev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p1excrev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p1totexp">
+<code class="descname">pf_validate_p1totexp</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p1totexp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p1totexp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p1totrev">
+<code class="descname">pf_validate_p1totrev</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p1totrev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p1totrev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.pf_validate_p2tinvsc">
+<code class="descname">pf_validate_p2tinvsc</code><span class="sig-paren">(</span><em>pf</em>, <em>fixer_display=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.pf_validate_p2tinvsc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.pf_validate_p2tinvsc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="validate_pf.ValidatePF.validate_pf">
+<code class="descname">validate_pf</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/validate_pf.html#ValidatePF.validate_pf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#validate_pf.ValidatePF.validate_pf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base method for validating certain columns for EINs from IRS form 990 PF.</p>
+<p>ARGUMENTS
+None</p>
+<p>RETURNS
+None</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_nccs.html">build_nccs module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_data.html">load_data module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_co_pc.html">process_co_pc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_ez.html">process_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_full.html">process_full module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_pf.html">process_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate.html">validate module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_ez.html">validate_ez module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validate_full.html">validate_full module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">validate_pf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_fixer.html">validation_fixer module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="write.html">write module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="validate_full.html" title="previous chapter">validate_full module</a></li>
+      <li>Next: <a href="validation_fixer.html" title="next chapter">validation_fixer module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/validate_pf.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

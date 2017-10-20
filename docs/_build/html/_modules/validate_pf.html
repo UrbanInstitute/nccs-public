@@ -1,0 +1,269 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>validate_pf &#8212; NCCS Core Files 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for validate_pf</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Code by Jeff Levy (jlevy@urban.org), 2016-2017</span>
+
+<div class="viewcode-block" id="ValidatePF"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF">[docs]</a><span class="k">class</span> <span class="nc">ValidatePF</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Methods for validating EINs from IRS form 990 PF.</span>
+
+<span class="sd">    Each method called by validate_pf represents the validation of one column, and comes with the kwarg</span>
+<span class="sd">    fixer_display=False, which when set to True will return only a string representation of the equation.</span>
+<span class="sd">    This is for use in the validation fixer tool.</span>
+
+<span class="sd">    Note that the PF data was never validated before, in the old SQL code.  These were all added based</span>
+<span class="sd">    strictly on sums given by the IRS form itself.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ValidatePF.validate_pf"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.validate_pf">[docs]</a>    <span class="k">def</span> <span class="nf">validate_pf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base method for validating certain columns for EINs from IRS form 990 PF.</span>
+
+<span class="sd">        ARGUMENTS</span>
+<span class="sd">        None</span>
+
+<span class="sd">        RETURNS</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">main</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_validation</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]:</span>
+            <span class="n">pf</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]</span>
+
+            <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validation_tracking</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p1totrev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p1totrev</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p1totrev&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p1totexp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p1totexp</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p1totexp&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p1excrev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p1excrev</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p1excrev&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p2tinvsc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p2tinvsc</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p2tinvsc&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tnadj&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tnadj</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tnadj&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tqdis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tqdis</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tqdis&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tasvl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tasvl</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tasvl&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14t4942&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14t4942</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14t4942&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tendw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tendw</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tendw&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14ttsup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14ttsup</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14ttsup&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tpsup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tpsup</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tpsup&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;validate_pf_p14tginv&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pf_validate_p14tginv</span><span class="p">(</span><span class="n">pf</span><span class="p">)</span>
+            <span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">pf</span><span class="p">,</span> <span class="n">pf_failed_validation</span><span class="p">,</span> <span class="s1">&#39;validate_pf_p14tginv&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">,</span> <span class="s1">&#39;PF&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">validation_tracking</span><span class="p">[</span><span class="s1">&#39;PF&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pf_failed_validation</span></div>
+            <span class="c1">#self.validate_form(pf, &#39;PF&#39;, pf_failed_validation)</span>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p1totrev"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p1totrev">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p1totrev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P1TOTREV - (P1TCONT + P1INTREV + P1DIVID + P1GRENTS + P1NGASTS + P1GINVPF + P1OTHINC)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1TOTREV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1TCONT&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1INTREV&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1DIVID&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1GRENTS&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1NGASTS&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1GINVPF&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1OTHINC&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p1totexp"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p1totexp">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p1totexp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P1TOTEXP - (P1ADMEXP + P1CONTPD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1TOTEXP&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1ADMEXP&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1CONTPD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p1excrev"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p1excrev">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p1excrev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P1EXCREV - (P1TOTREV - P1TOTEXP)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1EXCREV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1TOTREV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P1TOTEXP&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p2tinvsc"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p2tinvsc">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p2tinvsc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P2TINVSC - (P2GVTINV + P2CRPSTK + P2CRPBND)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P2TINVSC&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P2GVTINV&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P2CRPSTK&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P2CRPBND&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tnadj"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tnadj">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tnadj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TNADJ - (P14NADJA + P14NADJB + P14NADJC + P14NADJD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TNADJ&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14NADJA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14NADJB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14NADJC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14NADJD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tqdis"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tqdis">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tqdis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TQDIS - (P14QDISA + P14QDISB + P14QDISC + P14QDISD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TQDIS&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14QDISA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14QDISB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14QDISC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14QDISD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tasvl"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tasvl">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tasvl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TASVL - (P14ASVLA + P14ASVLB + P14ASVLC + P14ASVLD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TASVL&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ASVLA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ASVLB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ASVLC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ASVLD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14t4942"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14t4942">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14t4942</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14T4942 - (P14A4942 + P14B4942 + P14C4942 + P14D4942)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14T4942&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14A4942&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14B4942&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14C4942&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14D4942&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tendw"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tendw">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tendw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TENDW - (P14ENDWA + P14ENDWB + P14ENDWC + P14ENDWD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TENDW&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ENDWA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ENDWB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ENDWC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14ENDWD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14ttsup"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14ttsup">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14ttsup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TTSUP - (P14TSUPA + P14TSUPB + P14TSUPC + P14TSUPD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TTSUP&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TSUPA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TSUPB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TSUPC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TSUPD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tpsup"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tpsup">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tpsup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TPSUP - (P14PSUPA + P14PSUPB + P14PSUPC + P14PSUPD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TPSUP&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14PSUPA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14PSUPB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14PSUPC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14PSUPD&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="ValidatePF.pf_validate_p14tginv"><a class="viewcode-back" href="../validate_pf.html#validate_pf.ValidatePF.pf_validate_p14tginv">[docs]</a>    <span class="k">def</span> <span class="nf">pf_validate_p14tginv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">fixer_display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fixer_display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;P14TGINV - (P14GINVA + P14GINVB + P14GINVC + P14GINVD)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14TGINV&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14GINVA&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14GINVB&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14GINVC&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pf</span><span class="p">[</span><span class="s1">&#39;P14GINVD&#39;</span><span class="p">])</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">NCCS Core Files</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Setup</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../main.html">Main</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build_nccs.html">Build</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_data.html">Load Data</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Process</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_full.html">Process Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_ez.html">Process EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_pf.html">Process PF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process_co_pc.html">Process CO PC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validate</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validate.html">Validate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_full.html">Validate Full</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_ez.html">Validate EZ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../validate_pf.html">Validate PF</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Write</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../write.html">Write</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation Fixer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation_fixer.html">Validation Fixer CLI Tool</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Urban Institute, National Center for Charitable Statistics.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

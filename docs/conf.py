@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # NCCS Core Files documentation build configuration file, created by
-# sphinx-quickstart on Fri Oct  6 13:47:28 2017.
+# sphinx-quickstart on Wed Sep 20 16:41:54 2017.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -19,7 +19,7 @@
 #
 import os
 import sys
-sys.path.insert(0, 'c:\users\jeff\documents\github\nccs-public')
+sys.path.insert(0, 'c:\\users\\jeff\documents\\github\\nccs-file-processing\\core files')
 
 
 # -- General configuration ------------------------------------------------
@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'NCCS Core Files'
-copyright = '2017, Jeff Levy'
+copyright = '2017, Urban Institute, National Center for Charitable Statistics'
 author = 'Jeff Levy'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -191,5 +191,3 @@ epub_copyright = copyright
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
-
