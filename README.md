@@ -1,5 +1,6 @@
 # NCCS Core File Processing
 *Contact Deondre Jones (djones2@urban.org) with questions or comments*
+
 *Written by Jeff Levy using Python 3.5.3, Pandas 20.1, Numpy 1.11.2 and Requests 2.14.2 from Anaconda*
 
 This program will create the final NCCS core files.  It requires the following input data:
